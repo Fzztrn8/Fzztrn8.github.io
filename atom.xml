@@ -1,0 +1,1611 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://Fzztrn8.github.io</id>
+    <title>Fzztrn8</title>
+    <updated>2025-11-21T10:28:30.076Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://Fzztrn8.github.io"/>
+    <link rel="self" href="https://Fzztrn8.github.io/atom.xml"/>
+    <subtitle>温故而知新</subtitle>
+    <logo>https://Fzztrn8.github.io/images/avatar.png</logo>
+    <icon>https://Fzztrn8.github.io/favicon.ico</icon>
+    <rights>All rights reserved 2025, Fzztrn8</rights>
+    <entry>
+        <title type="html"><![CDATA[并发下的技术方案（锁）]]></title>
+        <id>https://Fzztrn8.github.io/post/bing-fa-xia-de-ji-zhu-fang-an-suo/</id>
+        <link href="https://Fzztrn8.github.io/post/bing-fa-xia-de-ji-zhu-fang-an-suo/">
+        </link>
+        <updated>2025-11-21T10:24:11.000Z</updated>
+        <content type="html"><![CDATA[<p>#Linux</p>
+<p><mark>十个线程同时对count加十万，输出发现不能准确达到100万</mark></p>
+<p>原因：</p>
+<p>count被分解为三条原子操作</p>
+<img src="https://s2.loli.net/2025/11/17/3wefIbpdLSxvl26.png">
+<p>在执行过程中发生了线程切换，导致访问临界资源时出现数据竞争</p>
+<img src="https://s2.loli.net/2025/11/17/OWs7v5USznu8Z2N.png" />
+<p>解决方法：</p>
+<ul>
+<li>
+<p>互斥锁(mutex):</p>
+<pre><code class="language-C">   pthread_mutex_lock(&amp;mutex);
+   (*pcount)++;
+   pthread_mutex_unlock(&amp;mutex);
+</code></pre>
+<p>互斥锁访问的临界资源被占用时会让出CPU进入阻塞态。在临界资源占用时间较长时使用互斥锁，比如线程安全的rbtree</p>
+</li>
+<li>
+<p>自旋锁(spinlock):</p>
+<p>自旋锁访问的临界资源被占用时会<strong>保持等待</strong>，如果临界资源被占用的时间<strong>非常短</strong>，自旋锁可以节省线程切换的开销</p>
+</li>
+<li>
+<p>原子操作：用单条CPU指令实现</p>
+<pre><code class="language-C">int inc(int *value,int add){
+
+    int old;
+
+    __asm__ volatile(         //内联汇编语法
+        &quot;lock; xaddl %2, %1;&quot;
+        :&quot;=a&quot; (old)
+        :&quot;m&quot; (*value),&quot;a&quot;(add)
+        :&quot;cc&quot;,&quot;memory&quot;  
+
+    );
+
+     return old;
+}
+
+
+
+inc(pcount,1);
+</code></pre>
+</li>
+</ul>
+<p>CAS --&gt; Compare And Swap --&gt;</p>
+<pre><code class="language-C">if (a==b){
+    a = c;
+}
+</code></pre>
+<pre><code class="language-c">int cas(int *ptr,int expected,int new_val){
+	__asm__ __volatile__(
+    &quot;lock cmpxchgl %2 %1;&quot;
+     :&quot;+a&quot;(expected), &quot;+m&quot;(*ptr)
+     :&quot;r&quot;(new_val)
+     :&quot;memory&quot;,&quot;cc&quot;
+    )
+
+}
+</code></pre>
+<h3 id="线程池">线程池</h3>
+<p>服务器在服务多个客户端时，使用多线程的方式</p>
+<p>而服务器资源有限，不能无限新建线程，故使用线程池：</p>
+<blockquote>
+<p>1.避免线程太多，使得内存耗尽</p>
+<p>2.避免创建与销毁线程的代价</p>
+<p>3.任务与执行分离</p>
+</blockquote>
+<p>例如对于日志文件，磁盘操作比内存操作慢很多，所以在写日志时会引起线程的挂起</p>
+<p>将写日志文件的<strong>任务</strong>交给线程池</p>
+<p>银行的例子：</p>
+<ul>
+<li>
+<p>办业务的人 -&gt; 任务队列</p>
+</li>
+<li>
+<p>柜员 -&gt; 执行队列</p>
+</li>
+<li>
+<p>公示牌 -&gt; 管理组件(防止多个办业务的人在一个柜台办理，两个柜员同时为一个客户办理)</p>
+<ul>
+<li>锁</li>
+</ul>
+</li>
+</ul>
+<p>线程池的实现</p>
+<p>任务队列</p>
+<pre><code class="language-C">struct nTask{
+    void (*task_function)(void *arg);
+    void *user_data;  //用来做任务执行的参数
+
+    struct nTask *prev;
+    struct nTask *next;
+};
+</code></pre>
+<p>执行队列</p>
+<pre><code class="language-C">struct nWorker{
+    pthread_t threadid;
+
+    struct nWorker *prev;
+    struct nWorker *next;
+};
+
+</code></pre>
+<p>管理组件</p>
+<pre><code class="language-C">typedef struct nManager{
+    struct nTask *tasks;
+    struct nWorker *workers;
+
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;  //条件变量
+
+}ThreadPool;
+</code></pre>
+<p>四个接口</p>
+<pre><code class="language-C">static void *nThreadPoolCallback(void *arg){
+
+}
+
+int nThreadPoolCreate(ThreadPool *pool,int nWorker){
+
+}
+
+
+int nThreadPoolDestory(ThreadPool *pool,int nWorker){
+
+}
+
+int nThreadPoolPushTask(ThreadPool *pool, struct nTask *task){
+
+}
+</code></pre>
+<p><strong>nThreadPoolCreate</strong></p>
+<p>用于初始化线程池，创建指定数量的工作线程，需要对状态变量和互斥锁初始化，再创建工作线程</p>
+<p><strong>nThreadPoolPushTask</strong></p>
+<p>将任务插入线程池的任务队列</p>
+<p>在加入后，通过<code>pthread_cond_signal</code>唤醒一个工作线程</p>
+<p><strong>nThreadPoolCallback</strong></p>
+<p>工作线程的核心循环：取任务-&gt;执行任务-&gt;循环使用双层循环，外层<code>while(1)</code>是线程主循环，内层循环当任务队列为空且未收到终止信号时将线程阻塞在cond变量</p>
+<p>若有任务，则取出任务并将其从任务队列删除，之后执行任务</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[C++ Ⅲ]]></title>
+        <id>https://Fzztrn8.github.io/post/c-iii/</id>
+        <link href="https://Fzztrn8.github.io/post/c-iii/">
+        </link>
+        <updated>2025-07-04T08:34:13.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="三"><strong>三</strong></h1>
+<h2 id="cpp的对象生存期栈作用域生存期">Cpp的对象生存期（栈作用域生存期）</h2>
+<p>简言之，在作用域内在栈上创建的变量会在作用域结束时被销毁。对于在堆上创造的变量，也可以通过构造函数和析构函数自动删除。</p>
+<h2 id="cpp的智能指针">Cpp的智能指针</h2>
+<p>智能指针本质上是一个原始指针的包装，当你创建一个智能指针，它会调用new为你分配内存，然后基于你使用的智能指针，这些内存会在某一时刻自动释放。首先是最简单的unique_ptr</p>
+<h3 id="unique_ptr">unique_ptr</h3>
+<p>unique_ptr是作用域指针，是超出作用域时，它会被销毁，然后调用delete。之所以叫unique_ptr，是因为你不能复制一个unique_ptr,如果你复制一个unique_ptr,那么你会有两个指针，两个unique_ptr指向同一个内存块，如果其中一个被销毁，他会释放那段内存，那么指向同一块内存的第二个unique_ptr指向了已经被释放的内存，所以不能复制unique_ptr。</p>
+<p>example:</p>
+<pre><code class="language-Cpp">class Entity
+{
+    public:
+        Entity()
+        {
+            std::cout &lt;&lt; &quot;Creaded Entity&quot; &lt;&lt; std::endl;
+        }
+
+        ~Entity()
+        {
+            std::cout &lt;&lt; &quot;Destroyed Entity&quot; &lt;&lt; std::endl;
+        }
+
+        void Print() {}
+}
+</code></pre>
+<p><code>要使用这些智能指针，首先应该包含memory头文件</code></p>
+<pre><code class="language-Cpp">#include&lt;memory&gt;
+
+//当我们想在特定的作用域使用unique_ptr指针
+
+int main()
+{
+    {
+
+        //下面是使用unique_ptr的一种方式
+        std::unique_ptr&lt;Entity&gt; entity(new Entity());//只能显示调用函数不能用 std::unique_ptr&lt;Entity&gt; entity  = new Entity();
+
+        entity-&gt;Print();
+
+        //另一种更好的方法
+        std::unique_ptr&lt;Entity&gt; entity  = std::make_unique&lt;Entity&gt;();
+        //这对unique_ptr很重要，主要是因为异常安全
+        //这样你最终不会得到一个空指针，从而造成内存泄漏
+
+    }
+}
+</code></pre>
+<p>但问题是如果你想分享这个指针，使得这个指针可以被传递到一个函数中，或者一个类中就会遇到问题，因为你不能复制它，这时可以使用shared_ptr</p>
+<h3 id="shared_ptr">shared_ptr</h3>
+<p>shared_ptr实现的方式实际上取决于编译器和你在编译器中使用的标准库<br>
+shared_ptr的工作方式是通过引用计数，可以跟踪你的指针有多少个引用，一旦引用计数达到零，它就被删除了</p>
+<p>例如我创建了一个共享指针shared_ptr，创建了另一个shared_ptr来复制它，此时引用计数就是2，当第一个被销毁，引用计数器就变为1，当最后一个被销毁，引用计数回到零，这块内存就被释放了</p>
+<pre><code class="language-Cpp">std::shared_ptr&lt;Entity&gt; sharedEntity = std::make_shared&lt;Entity&gt;()
+
+</code></pre>
+<p>不要用下面的方法<br>
+<code>std::shared_ptr&lt;Entity&gt; sharedEntity(new Entity())</code><br>
+在unique_ptr中，不直接使用new是因为异常安全，但在shared_ptr中有所不同，因为shared_ptr需要分配另一块内存，叫做控制块，用来存储引用计数，如果你首先创建一个new Entity,然后将其传递给shared_ptr构造函数，它必须做两次内存分配。先做一次new Entity的分配,然后是shared_ptr的控制内存块的分配<br>
+然而如果你用make_shared你能把他们组合起来，这样会更有效率</p>
+<p>最后，还有一个东西可以和shared_ptr一起使用，叫做weak_ptr</p>
+<p>可以像其他东西一样声明</p>
+<p><code>std::weak_ptr&lt;Entity&gt;</code> weakEmtity = sharedEntity;</p>
+<p>这里所做的和之前复制sharedEntity所做的一样，但之前会增加引用计数，<strong>但这里不会</strong><br>
+如果你不想要Entity的所有权，例如可能在排序一个Entity列表，你不关心他们是否有效，你只需要储存他们的一个引用就可以了</p>
+<p>简单来说，如果底层对象还存在，你可以做任何事情，但他不会让底层对象保持存活，因为它实际上不会增加引用计数</p>
+<p>至于什么时候应该使用它们，应该一直试着使用它们，它们会使内存管理自动化。会防止因为忘记调用delete而意外的泄漏内存</p>
+<h2 id="cpp的复制与拷贝构造函数">Cpp的复制与拷贝构造函数</h2>
+<p>拷贝复制是非常有用的东西，可以让程序按照我们想要的方式工作，但另一方面，不必要的复制会浪费性能。所以需要理解复制是如何在C++中工作的，如何让它工作，以及如何避免它工作，或者在不想复制的时候避免复制。对于理解语言以及能够高效正确的编写C++代码非常重要。下面通过写字符串类来演示。</p>
+<p>。。。。。。。。。。。。。。。。。<br>
+。。。。。。。。。。。。。。。。。<br>
+。。。。。。。。。。。。。。。。。</p>
+<h2 id="cpp的箭头操作符">Cpp的箭头操作符</h2>
+<p>首先假设有一个Entity类，内有print函数如果正常创建这个对象:<code>Entity e</code>,<code>e.Print()</code><br>
+但如果这个Entity对象实际上是一个指针的话</p>
+<p><code>Entity* ptr = &amp;e</code>此时为了调用print函数据不能使用<code>e.print()</code>因为这只是一个指针，也就是一个数值（不是对象，不能调用方法）。我们就需要用逆向引用(*ptr)</p>
+<p><code>Entity&amp; entity = *ptr</code>然后使用<code>entity.Print()</code>，当然也可以使用指针的逆向引用<code>(*ptr).Print()</code>，不能去掉括号，因为由于运算优先级，会先尝试调用Print，然后再逆向引用Print之后的结果</p>
+<p>但上面的操作看起来有些笨重，所以我们能做的是使用箭头操作符:<code>ptr-&gt;Print()</code>这实际上就相当于逆向引用了Entity指针</p>
+<p>这就是箭头操作符的是使用方式</p>
+<p>然而，作为一个操作符，C++可以重载它，并在你自己定义的类中使用它，使用下面的例子来说明为什么要这么做以及怎么做</p>
+<p>写一个智能指针的类</p>
+<pre><code class="language-C++">class ScopePtr
+{
+private:
+    Entity* m_Obj;
+public:
+    ScopedPtr(Entity* entity)
+        : m_Obj(entity)
+    {
+
+    }
+
+    ~ScopedPtr()
+    {
+        delete m_Obj;
+    }
+}
+
+//我们可以这样使用它
+
+int main()
+{
+    ScopedPtr eneity = new Entity();
+
+}
+
+</code></pre>
+<p>这里如果需要通过ScopedPtr调用Entity内的print函数，就需要用一个类似<code>GetObject()</code>的返回一个指针的函数，如果需要直接用ScopedPtr指针调用print，则需要对箭头操作符进行重载</p>
+<pre><code class="language-C++">Entity* operate-&gt;()
+{
+    return m_Obj;
+}
+
+const Entity* operate-&gt;()
+{
+    return m-Obj;
+}
+</code></pre>
+<p>然后就可以用这样的方法调用</p>
+<pre><code class="language-C++">int main()
+{
+    const ScopedPtr entity = new Entity;
+    entity-&gt;Print();
+
+    std::cin.get();
+}
+</code></pre>
+<p>可以使用箭头操作符来获取内存中某个成员变量的偏移量<br>
+有一个结构体</p>
+<pre><code class="language-C++">struct Vector3
+{
+    flaoat x,y,z;
+}
+</code></pre>
+<p>有三个浮点数分量float x,y,z<br>
+所以其中x的偏移量是0，因为其在结构体的第一项，y是4，z是8<br>
+如果将其的顺序移动为<code>float x,z,y</code>，在类中他们的工作方式是一样的，但他们在内存中会有不同的布局</p>
+<p>我们想写一些东西，来告诉我们这些成员的偏移量，就可以用箭头运算符来做这样的事情</p>
+<pre><code class="language-C++">//先写一个0，然后将它转换成一个Vector3指针,然后用箭头来访问x
+&amp;((Vector3*)0) -&gt; x
+</code></pre>
+<p>要做的就是取这个x的内存地址然后得到这个X的偏移量，因为从0开始，所以亦可以写为<code>&amp;((Vector3*)nullptr) -&gt; x</code></p>
+<p>让后将其转换为int类型，然后可将其输出</p>
+<pre><code class="language-C++">int offset = (int)&amp;((Vector3*)nullptr) -&gt; x;
+
+std::cin.get();
+</code></pre>
+<p>这里使用了箭头运算符来获取内存中某个值的偏移量。当你把主句序列化为一串字节流时，当你想要计算某些东西的偏移量时，我们会用到这种代码。</p>
+<h2 id="cpp动态数组stdvector">Cpp动态数组(std::vector)</h2>
+<p>Vector在初始化时无需指定大小，当超过初始化的大小时，它会在内存中创建一个比第一个大的新数组，把所有东西都复制到这里，然后删除旧的那个。</p>
+<p>现在我们来创建一个动态数组</p>
+<pre><code class="language-C++">//有一个vertex结构体
+struct Vertex
+{
+    float x,y,z;
+}
+
+//下面是输出运算符的重载，这样我们就能很容易地将其打印到控制台
+std::ostream&amp; operaor&lt;&lt;(std::ostream&amp; stream,const Vertex&amp; vertex)
+{
+    stream &lt;&lt; vertex.x &lt;&lt; &quot;,&quot; &lt;&lt; vertex.y &lt;&lt; &quot;,&quot; &lt;&lt; vertex.z;
+    return stream;
+}
+//如果我们想要一个静态数组，有两个选择，不考虑std::array的话，我们可以创建一个静态数组，其中可能有五个元素
+
+int main()
+{
+Vertex vertices[5]
+//我们需要绑定大小，即便你在堆上创建
+Vertex* vertices = new Vertex[5];
+}
+</code></pre>
+<p>但如果我们想持续输入数据，不在输入数量超过初始化数量时停止。我们需要一种方法，在此时重新调整容量。<br>
+这个问题的一个解决方案是，分配变态数量的vertex(<code>Vertex[5000000]</code>),但这当然是不理想的，这意味着会浪费很多内存。<br>
+所以我们可以用vector类来代替</p>
+<pre><code class="language-C++">std::vector&lt;Vertex&gt; vertices;
+//与Java不同的是，此处的类型可以传递基本类型，例如int
+
+</code></pre>
+<p>此处储存的元素的类型为<code>Vertex</code>而不是<code>Vertex*</code>，实际上只是把vertex对象储存在一条直线（一段内存）上，这两者有很大区别。具体使用视情况而定。<br>
+<strong>而主要考虑的是，储存vertex对象比储存指针在技术上更优</strong>，因为如果是Vertex对象，内存分配将是一条线上的。如果你像这样将vertex对象储存在一条直线上，他们都在同一条高速缓存线上。</p>
+<p>唯一的问题是，如果要调整vector的大小，它需要复制所有的数据。如果你有一个字符串的vector，并且需要调整它的大小，它确实需要重新分配和复制所有的东西，这可能是一个非常缓慢的操作。</p>
+<p>而指针不同，实际的内存保持不变，因为你只是正确的保存了指向内存的指针，所以实际的内存保持不变，到了调整大小的时候，它只实际数据的内存地址，而数据仍然被储存。在内存中的不同位置。</p>
+<pre><code class="language-C++">//向其中添加元素
+vertices.push_back({1,2,3});
+vertices.push_back({4,5,6});
+
+for(int i = 0;i &lt; vertices.size();i ++)
+{
+    std::cout &lt;&lt; vertices[i] &lt;&lt;std::endl;
+}
+
+//也可以使用基于range的for循环语句
+for(Vertex v : vertices)
+{
+    std::cout &lt;&lt; v &lt;&lt;std::endl;
+}
+//这实际上是将每个vertex复制到这个for范围循环中
+//但我们不想重复的复制，可以加上&amp;:  Vertex&amp; v :vertices
+
+
+//如果想清除vertex列表
+vertices.clear();//这会将其大小设为零
+
+//我们也可以单独移除某个vertex
+
+vertices.erase(vertices.begin() + 1)
+</code></pre>
+<p>另外，当你将vector传递给其他函数或类或其他东西时，需要确保是通过引用传递它们的，如果不会修改，就用const：<code>void Function(const std::vector&lt;Vertex)&amp; vertices</code><br>
+因为这样做可以确保没有把整个数组，复制到这个函数中。</p>
+<p>vector通常情况下是很慢的，某些情况下我们想尽力压榨出所有的性能，下面就是如何优化它。</p>
+<h2 id="cpp的stdvector使用优化">CPP的stdvector使用优化</h2>
+<p>优化vector的使用，应该先知道vector是如何工作的，以及如何改变它使之更好地工作。</p>
+<p>当你创建一个vector，然后开始push_back元素，如果vector的容量不够大，不能容纳新的元素。需要做的是，vector需要分配新的内存，至少足够容纳这些想要新加入的元素，当前的vector的内容，从内存中的旧位置复制到内存中的新位置，然后删除旧位置的内存。That`s what happents.</p>
+<p>这就是将代码拖慢的原因。我们需要不断地重新分配这是一个缓慢的动作。这就是需要避免的，这就是我们对于复制到优化策略。</p>
+<p>如何避免复制的对象，如果我们处理的是vector，特别是基于vector的对象（储存的不是vector指针<br>
+首先我们需要知道，复制是什么时候发生的，为什么会发生。</p>
+<pre><code class="language-C++">//首先我们有这个顶点类
+struct Vertex
+{
+    float x,y,z;
+
+    Vertex(float x,float y,float z)
+        :x(x),y(y),z(z)
+        {
+        }
+}
+
+int main()
+{
+    std::vector&lt;Vertex&gt; vertices;
+    vertices.push_back({1,2,3});
+    vertices.push_back({4,5,6});
+
+    std::cin.get();
+}
+
+//我们需要知道幕后发生了什么，确定实际发生了多少次复制
+
+//一个很好的方法是给vertex类添加一个拷贝构造函数，可能是在那里放一个断点，或者只是在控制台打印一些东西，看看拷贝构造函数什么时候被调用了
+
+//在Vertex类中写一个拷贝构造函数
+
+struct Vertex
+{
+    ······
+    ······
+
+    Vertex(const Vertex&amp; vertex)
+        : x(vertex.x),y(vertex.y),z(vertex.z)
+    {
+        std:;cout &lt;&lt; &quot;Copied!&quot; &lt;&lt; std:endl;
+    }
+};
+</code></pre>
+<p>运行代码，我们会得到</p>
+<pre><code class="language-C++">Copied!
+Copied!
+Copied!
+</code></pre>
+<p>如果用下面的方法</p>
+<pre><code class="language-C++">std::vector&lt;Vertex&gt; vertices;
+    vertices.push_back(Vertex(1,2,3));
+    vertices.push_back(Vertex(4,5,6));
+    vertices.push_back(Vertex(7,8,9));
+
+    std::cin.get();
+</code></pre>
+<p>会得到</p>
+<pre><code class="language-C++">Copied!
+Copied!
+Copied!
+Copied!
+Copied!
+Copied!
+</code></pre>
+<p>有了六次复制。为什么什么会这样，如果我们在第一次push_back处设置断点，当运行到此处会看见输出了一个Copied！<br>
+当我们创建vertex时，我们实际上是在主函数的当前栈帧中构造它，所以我们在main的栈上创建它。然后我们需要做的是，把它放到这个vector中，所以我们需要把这个创建的vertex从main函数放到实际的vector分配的内存中，即把它从main函数复制到vector类中。<br>
+<strong>这便是我们可以优化的第一件事，我们可以在适当的位置构造那个vertex（在vector的内存中）</strong></p>
+<p>设置断点，当我们执行到第二个push_back操作，会看到打印了三个Copied!,我们知道其中一个是什么时候产生的。是在main函数内部构造这个vertex对象然后将其放入到vector vertices中时产生的复制。<br>
+但为什么还会有另外一个？<br>
+通过编译器我们可以查看此时vertices的实际大小为2,这意味着在物理上有足够的内存来储存两个顶点对象，当我们再push一个，容量会变为3，这样才能有足够的内存放下第三个顶点。我们的vector在这里调整了2次大小，默认情况下大小是1，当不断添加元素，它会变大。这样看上面的六个copied分别来源于第一、二、三次的创建时的复制和调整大小时的1+2次将元素放入更大的新空间的复制。<br>
+<strong>如果我们知道计划放进三个vertex对象，为什么不直接让编译器制造足够的3个对象的内存，这样就不必调整两次大小了。这就是第二种优化策略。</strong></p>
+<p>例如在这里，我们希望容量是3，我们让vector容量为3的方法是设置<code>vertices.reserve(3)</code>，这与调整大小(resize)，或在构造函数中传入3是不同的。如果我们尝试再构造函数中传入3，这段代码将无法编译。因为这不仅仅是分配足够的内存，来储存三个vertex对象,它实际上会构造三个vertex对象。而我们并不需要这样做，我们只需要有足够的内存来容纳它们。</p>
+<pre><code class="language-C++">std::vector&lt;Vertex&gt; vertices;
+    vertices.reserve(3);
+    vertices.push_back(Vertex(1,2,3));
+    vertices.push_back(Vertex(4,5,6));
+    vertices.push_back(Vertex(7,8,9));
+
+    std::cin.get();
+</code></pre>
+<p>这样就将只会复制三次，我们节省了很多的copy。<br>
+但仍可以做得更好，因为这些vertex是在main函数中构造的，然后复制到实际的vector中。<br>
+我们可以再实际的vector中构造，使用emplace_back,而不是push_back，此时不再是传递我们已经构建的vertex对象，而只是传递构造函数的参数列表</p>
+<pre><code class="language-C++">vertices.emplace_back(1,2,3);
+vertices.emplace_back(4,5,6);
+vertices.emplace_back(7,8,9);
+</code></pre>
+<p>这样一来将不会发生复制。这样的代码会比我们最初的代码运行快得多。</p>
+<h2 id="c中使用库静态链接">C++中使用库（静态链接）</h2>
+<p>这里我们将以二进制文件形式进行链接，而不是获取实际依赖库的源代码并自己进行编译<br>
+这里讨论处理二进制GLFW库</p>
+<p>在官网获取了二进制的GLFW库文件<br>
+<img src="https://bu.dusays.com/2023/11/09/654c85689379e.png" alt="GLFW" loading="lazy"></p>
+<p>这是一种典型的文件布局。库通常包含两部分，include和library，包含目录和库目录<br>
+包含目录是一对堆头文件<br>
+include目录是一堆我们需要使用的头文件，这样我们就可以实际使用预构建的二进制文件中的函数<br>
+然后lib目录有那些预先构建的二进制文件，这里通常有两部分，动态库和静态库。但不是所有的的库都提供了这两种库。</p>
+<p>静态库意味着这个库会被放到你的可执行文件中，它在你的exe文件中或者其他操作系统下的可执行文件。<br>
+而动态链接库是在运行时被链接的，所以你仍有一些链接，你可以选择在程序运行时，装载动态链接库。</p>
+<p>你可以在WindowsAPI中使用一个叫做loadLibrary的函数作为例子，它会载入你的动态库，可以从中拉出函数，然后开始调用函数。<br>
+你也可以在应用程序启动时加载你的dll文件，这就是动态链接库。</p>
+<p>简单来说，主要的区别就是，库文件是否被编译到exe文件中或链接到exe文件中，还是只是一个单独的文件，在运行时，你需要把它放在你的exe文件旁边的某个地方，然后你的exe文件可以加载它。</p>
+<p>静态链接在技术上更快，因为编译器实际上可以执行链接时优化之类的。所以通常静态链接是最好的选择。<br>
+。。。。。。。。。。。。。。。。。。。<br>
+。。。。。。。。。。。。。。。。。。。<br>
+。。。。。。。。。。。。。。。。。。。</p>
+<h2 id="cpp中使用动态库">Cpp中使用动态库</h2>
+<h2 id="cpp中创建与使用库">Cpp中创建与使用库</h2>
+<h2 id="cpp中如何处理多返回值">Cpp中如何处理多返回值</h2>
+<p>当我们有一个函数，这个函数需要返回两个字符串。返回两种类型，有很多不同的方法可以实现。很显然再C++默认的情况下，不能返回两种类型。</p>
+<h2 id="cpp基准测试">Cpp基准测试</h2>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[C++ Ⅱ]]></title>
+        <id>https://Fzztrn8.github.io/post/c-ii/</id>
+        <link href="https://Fzztrn8.github.io/post/c-ii/">
+        </link>
+        <updated>2025-07-04T08:33:51.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="二"><strong>二</strong></h1>
+<p><a href="#c%E6%95%B0%E7%BB%84">C++数组</a></p>
+<p><a href="#14c%E5%AD%97%E7%AC%A6%E4%B8%B2">C++字符串</a></p>
+<p><a href="#c%E7%9A%84%E6%88%90%E5%91%98%E5%88%9D%E5%A7%8B%E5%8C%96%E5%88%97%E8%A1%A8">C++的初始化成员列表</a></p>
+<p><a href="#c%E4%B8%AD%E7%9A%84new%E5%85%B3%E9%94%AE%E5%AD%97">C++的new关键字</a></p>
+<p><a href="#c%E9%9A%90%E5%BC%8F%E8%BD%AC%E6%8D%A2%E4%B8%8Eexplicit%E5%85%B3%E9%94%AE%E5%AD%97">C++隐式转换与explicit关键字</a></p>
+<p><a href="#c%E8%BF%90%E7%AE%97%E7%AC%A6%E5%8F%8A%E5%85%B6%E9%87%8D%E8%BD%BD">C++运算符及其重载</a></p>
+<h2 id="c数组"><strong>C++数组</strong></h2>
+<p>Array</p>
+<p>可以在堆(heap)上创建一个数组</p>
+<pre><code class="language-C++">int* another = new int[5]; //其作用域与在栈上创建不同，直到程序把它销毁之前，它都是处于活动状态的，需要用delete关键字来删除
+
+delete[] another;
+
+</code></pre>
+<p>使用new动态分配最大的原因是生存期，用new来分配的内存，它将一直存在，直到手动删除它。如果你有一个函数返回一个数组，你必须使用一个new关键字来分配它，除非你传入一个数组的地址参数。在堆上创建数组，该数组指针所指的内容为一个地址，这个地址指向数组的第一个元素。所以，应该在栈上创建数组来避免这种情况，因为像这样在内存中跳跃肯定会影响性能</p>
+<p>另外，在栈上创建的数组可以用sizeof获得其大小，而在堆上创建的数组无法直接获得其大小，因为它只是一个地址，所以我们需要在创建数组时记录其大小</p>
+<pre><code class="language-C++">&gt; C++11中有内置数据结构std::array，相较于原始数组有很多优点，例如边界检查，记录数组大小
+
+``` C++
+
+#include&lt; array &gt;
+std::array&lt; int, 5 &gt; another;
+
+</code></pre>
+<h2 id="14c字符串"><strong>14.C++字符串</strong></h2>
+<p>字符串本质上是一个字符数组。</p>
+<pre><code class="language-C++">const char* name = &quot;Cherno&quot;;
+//char* name = &quot;Cherno&quot;这样的代码风格在C++11并没有被舍弃，但是不推荐使用。因为这样的代码会导致指针和字符串字面量类型不匹配的问题，可能会引发未定义行为。建议使用std::string或者const char来代替char。
+</code></pre>
+<p>在C++的标准库中有一个名为String的类，实际上有一个类叫BasicString，它是一个模板类，String是BasicString的一个特化版本，模板参数是char,它是一个字符数组的包装器，它提供了很多有用的方法，例如获取字符串长度，连接字符串，查找字符串，替换字符串等等</p>
+<p>std::string怎么工作？它只是一个char数组，有一个char数组和一些函数，用来操作这个数组，它的长度是可变的</p>
+<p>另一件常见的事是追加字符串，我们想做cherno + hello!不能写为</p>
+<pre><code class="language-C++">std::string name = &quot;Cherno&quot; + &quot;hello!&quot;;
+
+</code></pre>
+<p>发生这种情况的原因是 你实际上是想将两个const char的数组相加(双引号里的东西是const char数组，不是真正的字符串)，但是这是不可能的，这样实际上是两个指针相加。一个很简单的方法是把它分开成多行</p>
+<pre><code class="language-C++">name += &quot;hello!&quot;;
+
+</code></pre>
+<p>这样做是将一个指针，加到了name。name是一个是字符串，你把它加到一个字符串上，+=这个操作在string类被重载了，所以可以这样写。</p>
+<p>或者将两个相加的字符数组其中的一个，显式调用string的构造函数</p>
+<pre><code class="language-C++">std::string name = std::string(&quot;Cherno&quot;) + &quot;hello!&quot;;
+
+</code></pre>
+<p>相当于创建了一个字符串，然后附加这个字符数组给它</p>
+<h2 id="字符串字面量"><strong>字符串字面量</strong></h2>
+<p>双字符串字面量是在双引号之间的一串字符</p>
+<p>定义字符串时如果不使用const关键字而直接写类似<code>char* name = &quot;Cherno&quot;</code>这样的代码，这样的代码风格在C++11并没有被舍弃，但是<code>不推荐使用</code>。因为这样的代码会导致指针和字符串字面量类型不匹配的问题，可能会引发未定义行为。建议使用std::string或者const char来代替char。</p>
+<p>原因是，你在这里所做的是，你取了一个指向那个字符串字面量的内存位置的指针，而字符串字面量是储存在内存的只读部分的</p>
+<p>如果确实需要修改它，只需要将类型定义为一个数组，而不是指针</p>
+<pre><code class="language-C++">char name[] = &quot;Cherno&quot;;
+
+</code></pre>
+<p>除了char 还有一种类型叫做wchar_t,这就是宽字符。定义时需要在前加上大写L，表示下面的字符串字面值由宽字符组成<code>const wchar_t* name2 = L&quot;Cherno&quot;</code></p>
+<p>C++也引入了一些其他类型，比如<code>char16_t</code>,需要在前加上u。<code>char32_t</code>,加上大写的U</p>
+<pre><code class="language-C++">const char16_t* name3 = u&quot;Cherno&quot;;
+const char32_t* name4 = U&quot;Cherno&quot;;
+
+</code></pre>
+<p>基本上，char是一个字节的字符，char16是两个字节的16位的字符，char32是32位，4字节的字符分别对应utf8,utf16,utf32</p>
+<p>那么wchar和char16的区别是什么？因为他们似乎都是两个子节点字符</p>
+<p>虽然一直说每个字符是两个字节，然而这实际上是由编译器决定的，它可能是一个字节，也可能是两个字节，也可能是四个字节。在实际应用中，通常不是两个就是四个字节。在Windows上是2个字节，在Linux上是4个字节。所以这其实是一个变动的值。<br>
+如果你确实要的是2个字节的，就用char16_t。</p>
+<p>再讲讲两个字符串的事情。比如字符串附加。在C++14，有个std::string_literals 给出了一些方便的字符函数</p>
+<p>上文讲过，如果需要在一个字符串附加一些其他的字符串，不能使用</p>
+<pre><code class="language-C++">std::string name0 = &quot;Cherno&quot; + &quot;hello&quot;;
+
+</code></pre>
+<p>因为这些都是字符串字面量，他们实际上是数组或指针。之前的解决方案是用一个构造函数将其包围起来，使其成为一个string对象。然而，因为在C++14的string_literals库中有办法可以让事情变得简单一点。</p>
+<p>可以将s加到字符串的末尾。实际上这是一个函数。他是一个操作符函数，返回标准字符串（对象）</p>
+<p>我们还可以使用另一种方法来附加字符串字面量——字母R</p>
+<p>在字面量前写上R，这意味着忽略转义字符</p>
+<p>在实际应用中，如果我们要打印的东西是有很多行的字符串，可以直接像下面写</p>
+<pre><code class="language-C++">const char* example = R&quot;(Line1
+Line2
+Line3
+Line4)&quot;;
+
+</code></pre>
+<p>如果不这样，我们就需要用附加字符串的方法或下面的方法</p>
+<pre><code class="language-C++">const char* ex = &quot;Line1\n&quot;
+    &quot;Line2\n&quot;
+    &quot;Line3\n&quot;;
+
+</code></pre>
+<p>最后，关于字符串字面量的内存以及其如何工作</p>
+<p>字符串字面量<code>永远</code>保存在内存的只读区域(略)</p>
+<h2 id="c中的const"><strong>C++中的const</strong></h2>
+<p>const在改变生成代码方面做不了什么，它有点像类和结构体的可见性，这是一个机制，让代码更加干净，并对开发人员写代码强制特定的规则。const像是你做出的承诺，他承诺某些东西将是不变的。然而，它只是一个你可以绕过的承诺。我们使用const的原因是这个承诺可以简化很多代码</p>
+<p>const除了可以声明一个常量，还有其他几种用法</p>
+<p>首先是指针，通常对于一个指针，我们可以修改其指向的内容和其地址</p>
+<p>但使用了const（将const放在int*前）后，将无法修改指针指向的内容，但仍可以修改指针的指向（即地址）</p>
+<pre><code class="language-C++">const int* a  =new int;
+
+</code></pre>
+<p>使用const的第二种方式是将它放在*之后</p>
+<pre><code class="language-C++">int* const a = new int;
+
+</code></pre>
+<p>它的作用恰好相反，我们可以改变指针的指向，但无法把实际的指针本身重新赋值，指向别的东西</p>
+<p>注意,下面两种写法的作用是相同的</p>
+<pre><code class="language-C++">int const* a = new int;
+const int* a = new int;
+
+</code></pre>
+<p>当然，可以写两个const,这样既不能改变指针指向的内容，也不能改变指针本身</p>
+<pre><code class="language-C++">const int* const a = new int;
+
+</code></pre>
+<h2 id="在类中以及方法中使用const"><strong>在类中以及方法中使用const</strong></h2>
+<pre><code class="language-C++">class Entity
+{
+    private:
+        int m_X, m_Y;
+    public:
+    int GetX() const
+    {
+        return m_X;
+    }
+};
+
+</code></pre>
+<p>在类中方法的参数列表后写上const，这就是const的第三种用法。这意味着这个方法不会修改任何实际的类（即这个方法只能读取数据），所以我们不能修改类成员变量。如果在GetX中尝试m_X = 2则会出错</p>
+<p>定义下面的函数</p>
+<pre><code class="language-C++">void PrintEntity(const Entity&amp; e)
+{
+    std::cout &lt;&lt; e.GetX() &lt;&lt; std::endl;
+}
+
+</code></pre>
+<p>如果去掉GetX后的const，将不能调用GetX，因为GetX函数已经不能保证它不会写入Entity了。在这里，e是作为const ENtity的引用的，所以不能将e重新赋值。（这与参数为const Entity*类似）</p>
+<p>正因如此有时你会看到函数的两个版本例如一个带有const一个不带</p>
+<pre><code class="language-C++">int Get() const
+{
+    return m_X;
+}
+
+int Get()
+{
+    return m_X;
+}
+
+</code></pre>
+<p>如果你确实想要将方法标记为const,但由于某些原因，又确实需要修改一些变量。在C++中有一个关键词<code>mutable</code> 这个词意味着它是可以被改变的</p>
+<pre><code class="language-C++">mutable int var;
+
+</code></pre>
+<p>这样即使在const方法中也可以对var作出修改</p>
+<h2 id="c中的mutable关键字"><strong>C++中的mutable关键字</strong></h2>
+<p>mutable有两种不同的用途，其中之一就是上文中的与const一起使用，另一种是用在lambda表达式中。</p>
+<h2 id="c的成员初始化列表"><strong>C++的成员初始化列表</strong></h2>
+<p>构造函数初始化列表。这是我们在构造函数中初始化类成员（变量）的一种方式。<br>
+当我们编写一个类并向该类添加成员时，通常需要用某种方法来初始化这些成员。在C++中，有两种方法可以做到这一点。第一种是在构造函数中初始化它们，第二种是使用成员初始化列表。这两种方法都可以做到这一点，但是成员初始化列表的效率更高，因为它可以避免不必要的构造函数调用。</p>
+<pre><code class="language-C++">class Entity
+{
+    private:
+        std::string m_Name;
+        int m_Score;
+    public:
+        Entity()
+            :m_Name(&quot;Unknown&quot;),m_Score(0) //成员初始化列表
+            {
+
+            }
+}
+    
+</code></pre>
+<p>要注意的是，在成员初始化列表中，<code>应该按照声明的顺序写</code>。因为不管你怎么写，都会按照声明的顺序初始化。如果你打破这个顺序，这就会导致各种各样的依赖性问题。</p>
+<p>我们为什么要使用这个？首先这会让代码看起来整洁，使构造函数干净易读。还有一个功能上的区别，在特定类的情况下，如果写如下的代码</p>
+<pre><code class="language-C++">class Entity
+{
+    private:
+        std::string m_Name;
+        int m_Score;
+    public:
+        Entity()
+            :m_Name(&quot;Unknown&quot;),m_Score(0) //成员初始化列表
+            {
+
+            }
+}
+    
+</code></pre>
+<h2 id="创建并初始化c对象"><strong>创建并初始化C++对象</strong></h2>
+<pre><code class="language-C++">Entity{
+    private:
+    String m_Name;
+    public:
+    Entity() : m_Name(&quot;Unknown&quot;){}; //构造函数 或Entity entity(&quot;Cherno&quot;)
+    Entity(const String&amp; name) : m_Name(name){}; //构造函数
+
+    cosnt String&amp; GetName() const {return m_Name;}
+}
+
+int main(){
+    Entity entity = Entity(&quot;Cherno&quot;); //创建并初始化对象
+    std::cout &lt;&lt; entity.GetName() &lt;&lt; std::endl;
+
+    std:cin.get();
+}
+
+</code></pre>
+<p>这就是通常做的在栈(stack)上初始化对象。如果能这样创建对象，就这样做，因为这是C++中最快的方法，也是可以管控的方法。</p>
+<p>某些情况下我们不能这样做</p>
+<p>你在一个函数中初始化了一个对象，它会被储存在栈中，当函数运行结束时他就会被销毁。（作用域不一定是函数，还可以是if语句甚至是只是夹在空的花括号中）</p>
+<p>如果你想把它放到这个函数生存期之外,就需要将其分配到堆(heap)上</p>
+<p>另一个不分配到栈的原因是，如果这个entity的规模太大，而且我们可能有太多的entity，我们可能没有足够的空间在栈上分配，因为栈通常非常小，通常是1 megabyte或2 megabyte，这取决于编译器和平台。</p>
+<p>下面看看堆分配</p>
+<p>如果想要将上面的entity分配到堆，首先要做的是改变类型，类型现在不是Entity而是Entity*。这里的最大的区别不是类型变成了指针，而是new关键字。</p>
+<pre><code class="language-C++">Entity* entity = new Entity(&quot;Cherno&quot;);
+e = &amp;entity;
+
+</code></pre>
+<p>当我们调用new Entity时，我们会在堆上分配内存，调用构造函数。这个new Entity实际上会返回一个Entity*，是这个entity在堆上被分配内存的地址（这也是Java和C#中代码的样子）</p>
+<p>当我们在C++做了上面的事情，我们需要负责释放这些内存</p>
+<pre><code class="language-C++">delete entity;
+
+</code></pre>
+<p>这就是创造对象的两种方法。如何选择？如果对象太大或者要显式地控制对象的生存期就用堆上创建</p>
+<h2 id="c中的new关键字"><strong>C++中的new关键字</strong></h2>
+<p>你在编写C++程序是，应该关心内存、性能和优化等问题。</p>
+<p>使用new的主要目的是在堆上分配内存。写上new + 数据类型 。它决定了必要的分配大小，以字节为单位。例如new int，我们需要找到一块包含四个字节的连续内存块。<br>
+一旦找到，就会返回一个指向这个地址的指针。当你调用new，将会消耗时间。虽然搜索内存并不是在内存中一个一个查找，而是有一种叫做空闲列表的东西，它会维护那些有空闲字节的地址。但这仍然很慢</p>
+<p>当用new来初始化对象，不仅会分配内存，还会调用构造函数。（实际上new是一个操作符，它的行为依赖于C++类库，这意味着你可以重载这个操作符，并改变它的行为）</p>
+<p>通常，调用new，会调用隐藏在里面的C函数malloc，它代表分配内存（传入size，返回指针）也就是说<code>Entity* e = new Entity()</code>相当于<code>Entity* e = malloc(sizeof(Entity))</code>这两种代码仅有的区别是第一个调用了构造函数而第二个只是分配了内存</p>
+<p>最后，记得delete(也是一个操作符，调用了C函数free，也调用了析构函数)</p>
+<p>注意，当我们使用new时使用了[]，例如<code>int* b = new int[50]</code>，则delete时需要用<code>delete[]</code></p>
+<blockquote>
+<p>placement new<br>
+placement new是一种特殊的new表达式，它可以在指定的内存地址上创建对象，而&gt; 不是从系统的堆中分配空间¹。它的语法形式是：</p>
+<p>new (placement-params) ( type ) initializer</p>
+<p>其中placement-params是提供给分配函数的额外参数，type是要创建的对象的类型，initializer是用来初始化对象的表达式。</p>
+<p>placement new的作用是可以利用已经分配好的内存空间，避免重复申请和释放内存，提高程序的效率和灵活性。它也可以用来在栈或堆上生成对象。</p>
+<p>使用placement new时，需要注意以下几点：</p>
+<ul>
+<li>placement new不会分配内存，所以必须保证指定的内存地址是有效的，并且有足够的空间容纳对象¹。</li>
+<li>placement new会调用对象的构造函数，但不会自动调用对象的析构函数，所以需要显式地调用析构函数来销毁对象。</li>
+<li>placement new不能被用户重载，只能使用标准库提供的版本。</li>
+</ul>
+</blockquote>
+<h2 id="c隐式转换与explicit关键字"><strong>C++隐式转换与explicit关键字</strong></h2>
+<p>隐含的意思是不会明确地告诉它要做什么，所以有点像automatic,通过上下文知道意思。C++允许编译器对代码执行一次隐式转换，如果我们开始有两个数据类型，在两者之间，c++允许隐式转换，而不需要用cast做强制转换</p>
+<pre><code class="language-C++">class Entity
+{
+    private:
+    std::string m_Name;
+    int m_Age;
+    public:
+    Entity(const std::string&amp; name)
+        : m_Name(name), m_Age(-1) {};
+    Entity(int age)
+        : m_Name(&quot;Unknown&quot;), m_Age(age) {};
+};
+
+</code></pre>
+<p>可以看到在上面的类中有两个构造函数，一个接受int类型参数，一个接受string类型参数。如果我们想要创建一个Entity对象，我们可以这样做</p>
+<pre><code class="language-C++">Entity a(&quot;Cherno&quot;);
+Entity b(22);
+
+</code></pre>
+<p>但是我们也可以直接将a赋值为Cherno，b赋值为22</p>
+<pre><code class="language-C++">Entity a = &quot;Cherno&quot;;
+Entity b = 22;
+
+</code></pre>
+<p>这称为隐式转换，它隐式的将22转换成一个Entity，构造出一个Entity。因为有一个Entity的构造函数，接受一个整数的参数，另一个接受字符串作为参数</p>
+<p>explicit关键字可以阻止隐式转换，只能用显式转换.explicit关键字放在构造函数的前面。此时如果要使用整数构造这个ENtity对象，则必须显式调用此构造函数</p>
+<h2 id="c运算符及其重载"><strong>C++运算符及其重载</strong></h2>
+<p>运算符是我们使用的一种符号，通常代替函数来执行一些事情。而重载本质是给运算符赋予新的功能或者添加参数等（运算符实际上是函数），允许在程序中定义或更改运算符的行为。这一特性在Java等语言中并不受支持。在C#被部分支持。</p>
+<p>总的来说，运算符重载的使用应该要非常少而且只是在完全有意义的情况下。例如，当定义一个math类，你需要把两个math对象加在一起，那么将'+'进行重载是很有意义的，因为这样做可以简化代码</p>
+<p>例:</p>
+<p>这里构造了一个Vector2,对其进行运算</p>
+<pre><code class="language-C++">struct Vector2
+{
+    float x, y;
+
+    Vector2(float x, float y)
+        :x(x),y(y) {}
+
+
+
+};
+
+int main()
+{
+    Vector2 position(4.0f,4.0f);
+    Vector2 speed(0.5f,1.5f);
+}
+
+//我们创造了两个向量，如果要将他们相加，可以在Vector2中写add(speed)来解决，这样就可以使用position.add
+
+    Vector2 Add(const Vector2&amp; other) const
+    {
+        return Vector2(x + other.x, y + other.y);
+    };
+
+//如果我们需要通过某种修改来改变speed,可能用powerup,是速度稍快一点，就要用到乘法，定义一个powerup,写Mulitoly（powerup）来实现
+Vector2 powerup(1.1f,1.1f);
+
+Vector2 Multiply(const Vector2&amp; other) const
+{
+    return Vector2(x * other.x,y * other,y);
+}
+
+//然后变化后的为
+
+Vector2 result = position.Add(speed.Multiply(powerup));
+
+std::cin.get();
+
+</code></pre>
+<p>在C++中，我们可以定义自己的运算符来处理vector2结构,所以可以不用写成这样。我们可以将其转化为数学运算符</p>
+<pre><code class="language-C++">//就只需要写成下面
+Vector2 result = position + speed * powerup;
+
+</code></pre>
+<p>下面是对于重载符的定义</p>
+<pre><code class="language-C++">//类型名后不加函数名而是operator+
+
+Vector2 operator+(const Vector2&amp; other) const
+{
+    return Add(other);
+}
+
+//这样就完成了对+的重构
+</code></pre>
+<p>因为他们和其他函数一样，我们也可以反过来做，不是operatpr+调用add函数,而是add函数调用operator+函数,虽然这并不常见</p>
+<p>just liek:</p>
+<pre><code class="language-C++">Vector2 operator+(const Vector2&amp; other) const
+{
+    return Vector2(x + other.x, y + other.y);
+}
+
+Vector2 Add(const Vector2&amp; other) const
+{
+     return *this + other;
+}
+</code></pre>
+<p>同理，对于*的重构</p>
+<pre><code class="language-C++">Vector2 operator*(const Vector2&amp; other) const
+{
+    return Multiply(other);
+}
+</code></pre>
+<p>另外，我们可以对std::out中的&quot;&lt;&lt;&quot;进行重载，然后就可以使用<code>std::cout &lt;&lt; result2 &lt;&lt;std::endl;</code></p>
+<p>这是一个在类外定义的运算重载符,所以我们仍然需要对一个现有流的引用，在这种情况下，就是<code>cout</code>。(std::ostream是我们需要重载的符号的最初定义)</p>
+<pre><code class="language-C++">std::ostream&amp; operator&lt;&lt;(std::ostream stream,const Vector2&amp; other)
+{
+    stream &lt;&lt; other.x &lt;&lt; &quot;,&quot; &lt; other.y;
+}
+
+</code></pre>
+<p>下面还有一个例子,对于==的重载</p>
+<pre><code class="language-C++">bool operator==(const Vector2&amp; other) const{
+    return x == other.x &amp;&amp; y == other.y;
+}
+
+bool operator!=(const Vector2&amp; other) const
+{
+    return !(*this == other);
+}
+
+if(result1 == result2){
+
+}
+</code></pre>
+<h2 id="cpp中的this关键字">Cpp中的this关键字</h2>
+<p>通过C++中的<code>this</code>关键字，可以访问成员函数(一个属于某个类的函数或方法)，在方法内部我们可以引用<code>this</code>. <code>this</code>是一个指向当前对象实例的指针，该方法属于这个对象实例。在cpp中我们可以写一个非静态方法，为了调用它，我们首先实例化一个对象，然后调用这个方法，这个方法必须用一个有效的对象来调用，关键字<code>this</code>是指向该对象的指针。</p>
+<pre><code class="language-C++">class Entity
+{
+public:
+    int x, y;
+
+//例如在下面的构造函数中，我们如果想要将参数的x,y赋值给类中的变量x，直接写x = x将是无效的，它的意思是将x赋值给其自身。而我们真正想做的是引用类中的x，y this关键字可以帮我们做到
+    Entity(int x, int y)
+    {
+        Entity* e = this;//实际上这就是this的类型
+
+        //此时我们想要赋值x，只需：e-&gt; x = x或this-&gt; x或(*this).x = x;
+        this-&gt; x = x;
+        this-&gt; y = y;
+    }
+        
+}
+
+</code></pre>
+<p>如果我们想要写一个返回这些变量之一的函数（不会修改这个类）</p>
+<pre><code class="language-C++">int  GetX() const
+{
+    return x;
+}
+
+</code></pre>
+<p>在这个函数中，不能将this通过<code>Entity* e = this</code>赋值,而是<code>const Entity* e = this</code>这样就能保证不会修改类</p>
+<p>另一个有用的场合是，如果我们想要在类的内部调用这个类之外的函数（外部函数），并且这个函数将entity作为参数，例如</p>
+<pre><code class="language-C++">//这是一个在类外部定义的函数
+
+void PrintEntity(Entity* e)
+{
+    //print
+}
+
+//当我们要在类的内部调用这个函数，传递这个Entity类的当前实例到这个函数
+
+PrintEntity(this);
+
+</code></pre>
+<p>如果想把它作为一个常量引用 const &amp;</p>
+<pre><code class="language-C++">void PrintEntity(const Entity&amp; e)
+{
+    ....
+}
+</code></pre>
+<p>要做的就只是逆向引用<br>
+<code>PrintEntity(*this)</code></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[C++ Ⅰ]]></title>
+        <id>https://Fzztrn8.github.io/post/c-i/</id>
+        <link href="https://Fzztrn8.github.io/post/c-i/">
+        </link>
+        <updated>2025-07-04T08:32:59.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="一"><strong>一</strong></h1>
+<p>[指针]<br>
+<a href="#2%E5%BC%95%E7%94%A8">引用</a></p>
+<p><a href="#3c%E7%B1%BBclass">C++类</a></p>
+<p><a href="#4c%E4%B8%AD%E7%9A%84static%E9%9D%99%E6%80%81">C++中的静态</a></p>
+<p><a href="#5c%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E9%9D%99%E6%80%81local-static">C++中的局部静态</a></p>
+<p><a href="#6c%E6%9E%9A%E4%B8%BEenum">C++枚举(enum)</a></p>
+<p><a href="#7%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0">构造函数</a></p>
+<p><a href="#8%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0">析构函数</a></p>
+<p><a href="#9c%E7%BB%A7%E6%89%BF">C++继承</a></p>
+<p><a href="#10%E8%99%9A%E5%87%BD%E6%95%B0">虚函数</a></p>
+<p><a href="#11%E6%8E%A5%E5%8F%A3%E7%BA%AF%E8%99%9A%E5%87%BD%E6%95%B0">接口</a></p>
+<p><a href="#%E5%8F%AF%E8%A7%81%E6%80%A7">可见性</a></p>
+<hr>
+<h2 id="1指针">1.指针</h2>
+<p>内容在C中已经熟悉</p>
+<ul>
+<li>指针本身为一个代表地址的整数</li>
+<li>指针的<code>*</code>运算符通常被称为dereference运算符，可逆引用指针。</li>
+</ul>
+<h2 id="2引用">2.引用</h2>
+<p>引用必须引用已经存在的变量，其本身不是变量也不占用内存，相当于变量的别名</p>
+<p>使用 <code>int&amp;</code> 类此的形式声明引用变量</p>
+<p>其作用为向函数传递变量，而不是只传递值，这使得函数可以直接对变量进行操作。可以达到与使用指针相似的效果，但比使用直至简单。</p>
+<p>例如用指针实现</p>
+<pre><code class="language-C++">#include&lt;iostream&gt;
+void Increment(int* value)
+{
+    (*value)++;
+}
+int main(){
+    int a = 5;
+    Increment(&amp;a);
+    std::cout&lt;&lt;a&lt;&lt;std::endl;
+    std::cin.get();
+}
+</code></pre>
+<p>引用实现</p>
+<pre><code class="language-C++">#include&lt;iostream&gt;
+void Increment(int&amp; value)
+{
+    value++;
+}
+int main(){
+    int a = 5;
+    Increment(a);
+    std::cout&lt;&lt;a&lt;&lt;std::endl;
+    std::cin.get();
+}
+</code></pre>
+<ul>
+<li>声明一个引用时必须对其赋值且引用的内容不可改变</li>
+</ul>
+<hr>
+<h2 id="3c类class">3.C++类（class)</h2>
+<p>类是对数据和功能组合在一起的一种方法。例如角色在游戏中的位置，角色可能拥有的某些属性等。直接创建这些内容会十分麻烦和混乱。</p>
+<p>通过使用类可以简化这些操作，我们可以创建一个叫做Player的类，它包含了所有的数据，当然，类中也可以包含函数，被称为<code>方法</code></p>
+<p>由类类型构成的变量成为对象，新的对象变量称为实例</p>
+<blockquote>
+<p>默认情况下，一个类中所有的东西都是私有的，这意味着只有类中的函数才能访问这些变量。我们希望从main函数中访问这些变量，需要将其设置为public</p>
+</blockquote>
+<pre><code class="language-C++">class Player
+{
+public:
+    int x,y;
+    int speed;
+
+    void Move(int xa, int ya)
+    {
+        //此处的X,Y，speed指的都是当前对象的变量
+       x += xa * speed;
+       y += ya * speed; 
+    }
+
+};
+
+int main()
+{
+    Player player;//实例化了一个Player对象
+    player.move(1,-1);//player对象内的函数
+    std::cin.get();
+
+}
+</code></pre>
+<p>总的来说，类允许我们将变量分组到一个类型中，并为这些变量添加功能</p>
+<p>类可以让代码变得简洁，使其容易维护。但是不用类搞不定的事情，用类也一样搞不定。类没有提供任何新功能</p>
+<ul>
+<li>结构体和类的对比</li>
+</ul>
+<blockquote>
+<p>默认情况下，类是<code>private</code>的，而结构体是<code>public</code>的。</p>
+</blockquote>
+<p><strong>如何写一个类：</strong></p>
+<p>///</p>
+<pre><code class="language-c++">class Log
+{
+public:
+const int LogLevelError = 0;
+const int LogLevelWaring = 1;
+const int LogLevelInfo = 2;
+private:
+int m_LogLevel = LogLevelInfo;
+public:
+void SetLevel(int level)
+{
+    m_messahe = level;
+}
+void Warn(const char* mess){
+     if (m_LogLevel &gt;= LogLevelWarn)
+    std::cout &lt;&lt; &quot;[WARING]:&quot;&lt;&lt; message &lt;&lt;std::endl
+}
+
+void Error(const char* mess){
+    if (m_LogLevel &gt;= LogLevelRrror)
+    std::cout &lt;&lt; &quot;[ERROR]:&quot;&lt;&lt; message &lt;&lt;std::endl
+}
+
+void Info(const char* mess){
+     if (m_LogLevel &gt;= LogLevelInfo)
+    std::cout &lt;&lt; &quot;[INFO]:&quot;&lt;&lt; message &lt;&lt;std::endl
+}
+
+};
+ int main(){
+    Log log;
+    log.Setlevel(log.LogLevelWaring);
+    log.Warn(&quot;Hello&quot;)
+    std::cin.get();
+ }
+
+</code></pre>
+<hr>
+<h2 id="4c中的static静态"><strong>4.C++中的static(静态)</strong></h2>
+<p>static有两种意思，这取决于上下文。</p>
+<p>其中之一是在类或结构体外部使用static关键字，另一种是在类或结构体内部使用ststic</p>
+<p>类外面的static,意味着你声明为static的符号，链接将只是在内部，<code>这意味着它只能对你定义它的翻译单元可见</code></p>
+<p>然而，类或结构体内部的静态变量(static)意味着该变量实际上将与类的所有实例共享内存，这意味着该静态变量在你创建的所有实例中，静态变量只有一个实例，类似的事情也适用于类中的静态方法。在类中，没有实例会传递给该方法。</p>
+<p>在这里先讨论<em>类或结构体外的静态</em></p>
+<pre><code class="language-C++">static int s_Variable = 5;
+</code></pre>
+<p>例如此处，静态<code>变量或函数</code>意味着，当需要将这些函数或变量与实际定义的符号链接时，链接器不会再这个翻译单元的作用域之外，寻找那个符号定义</p>
+<p>下面是<em>类或结构体中的静态（static)</em></p>
+<p>在几乎所有面向对象的语言中，静态在一个类中意味着特定的东西，如果把它和变量一起使用，这意味着在类的所有实例中，这个变量只有一个实例</p>
+<blockquote>
+<p>如果我创建一个名为Entity的类，我不断创建ENtity实例，<em>我仍然只会得到那个变量的一个版本</em>。意思是，如果某个实例改变了这个静态变量他会在所有实例中反映这个变化。因此，通过类实例来引用静态变量是没有意义的。因为这就像类的全局实例。静态方法也是一样，无法访问类的实例。静态方法可以被调用，不需要通过类的实例。<code>而在静态方法内部，你不能写引用到实例的代码</code>，因为你不能引用到类的实例</p>
+</blockquote>
+<h2 id="5c中的局部静态local-static"><strong>5.C++中的局部静态(local static)</strong></h2>
+<p>这是在一个局部的作用域。你可以在局部的作用域中使用static来声明一个变量。</p>
+<p>声明一个变量，我们需要考虑两种情况，这就是变量的生存期和作用域。</p>
+<blockquote>
+<p>生存期指的是变量的实际存在时间<br>
+变量的作用域是指我们可以访问变量的范围<br>
+如果在函数的内部声明一个变量，我们不能在其他的函数中访问它。</p>
+</blockquote>
+<p>静态局部(local static)变量允许我们声明一个变量，<code>他的生存期基本上相当于整个程序的生存期</code>，然而它的作用范围被限制在这个函数内，但他和函数没有什么关系。（你可以在任何作用域中生命这个）</p>
+<h2 id="6c枚举enum"><strong>6.C++枚举(enum)</strong></h2>
+<p>枚举是给一个值命名的一种方法，所以我们不用一堆叫做a、b、c的整数，我们可以有一个枚举数，它的值是a,b,c与整数相对应</p>
+<p>他还能帮助我们，将一组数值集合作为类型，而不仅仅是用整型作为类型</p>
+<p>例：</p>
+<pre><code class="language-C++">enum Example : unsigned char//冒号及其后内容可选，表示是数据类型，但必须为整数，例如可为char
+{
+    A,B,C//若不赋值，将从0开始递增
+}
+int main()
+{
+    Example value = B;//此处Example类型变量的值只能为A、B、C中的一种
+    if(value == 1)
+    {
+        //Do something here
+    }
+    std::cin.get();
+
+
+}
+
+</code></pre>
+<p>在3.内容中的如何写一个类可以用枚举来修改：</p>
+<pre><code class="language-C++">class Log{
+    public:
+    enum Level{
+        Error,Warning,Info
+    }
+}
+</code></pre>
+<p>显然会让代码变得简介<br>
+同时如果枚举类型变量在赋值时被赋予了枚举以外的内容，编译器将会提醒</p>
+<h2 id="7构造函数"><strong>7.构造函数</strong></h2>
+<blockquote>
+<p>（此处的构造不是动词）</p>
+</blockquote>
+<p>构造函数基本上是一种特殊类型的方法，<code>它在每次实例化对象时运行</code>主要的作用是初始化该类</p>
+<p>eg:假设我们想要创建一个Entity类</p>
+<pre><code class="language-c++">class Entity
+{
+    public:
+    float X,Y;
+    void Init(){
+        X = 0.0f;
+        Y = 0.0f;
+    }
+    void Printf(){
+        std::cout &lt;&lt; X &lt;&lt;&quot;,&quot;&lt;&lt;Y&lt;&lt;std::endl;
+    }
+}
+int main(){
+    Entity e;
+    e.Printf();
+    std::cin.get();
+}
+</code></pre>
+<p>这样的话，每次新实例化一个变量就要用Init方法初始化一遍，很繁琐</p>
+<p>而构造函数是一种每次你构造一个对象都会调用的方法，像定义其他方法一样定义它，但它没有返回类型，并且它的名称必须与类的名称相同</p>
+<pre><code class="language-C">Entity (){
+    X = 0.0f;
+    Y = 0.0f;
+}
+</code></pre>
+<p>如果不指定构造函数，仍然会有一个叫做默认构造函数的东西，只不过什么都都不做</p>
+<h3 id="带参数的构造函数">带参数的构造函数</h3>
+<p>其实可以写很多的构造函数，前提是他们由不同的参数，和写一些同名函数是一样的*（函数重载）</p>
+<blockquote>
+<p>函数重载：即有相同的函数（方法）名，但是有不同的参数的不同版本</p>
+</blockquote>
+<pre><code class="language-c++">Entity(float x,float y){
+    X = x;
+    Y = y;
+}
+</code></pre>
+<p>可以使用下面的方法传入参数</p>
+<pre><code class="language-C++">Entity e(10.0f,5.0f);
+</code></pre>
+<p>构造函数，如果不实例化对象，将不会运行，所以如果只使用一个类的静态方法，它不会运行</p>
+<blockquote>
+<p>静态成员是类级别的,也就是它和类的地位等同,而普通成员是对象(实例)级别的.类级别的成员,应先于该类任何对象的存在而存在,所以类的静态成员会被该类所有的对象共享,因此不能在静态方法里面访问非静态元素但非静态方法可以访问类的静态成员及非静态成员</p>
+</blockquote>
+<p>也有一些方法可以删除构造函数，例如下面的例子中，只想让人们用Log::Write()使用Log类，不希望创建实例</p>
+<p>有两种方法</p>
+<ul>
+<li>通过设置为private来隐藏构造函数（默认构造函数）</li>
+<li>删除构造函数如<code>Log() = delete;</code></li>
+</ul>
+<pre><code class="language-c++">class Log{
+public:
+    static void Write(){
+
+    }
+}
+
+int main(){
+    //
+}
+</code></pre>
+<h2 id="8析构函数"><strong>8.析构函数</strong></h2>
+<p>析构函数与构造函数很相似，析构函数实在销毁对象时运行，任何时候，一个对象将被销毁时，析构函数将被调用它不会返回任何值，也不能带有任何参数</p>
+<p>构造函数通常是设置变量或者做任何你需要做的初始化，同样的，析构函数是你卸载变量等东西，并清理你使用过的内存(关闭文件)</p>
+<p>构析函数同时适用于栈和堆分配的对象，如果你使用new分配一个对象，当你调用delete时，构析函数会被调用。而如果只是一个栈对象，<code>当作用域结束时，栈对象将被删除，这时，析构函数也会被调用</code></p>
+<p>构析函数写为~，然后是类的名称</p>
+<pre><code class="language-c++">~Entity(){
+    //下面只是示例内容
+    std::count&lt;&lt;&quot;Destoryed Entity!&quot;&lt;&lt;std:endl;//销毁时打印对应内容
+
+
+}
+</code></pre>
+<p>析构函数也可以手动调用例如<code>e.~Entity();</code></p>
+<h2 id="9c继承"><strong>9.C++继承</strong></h2>
+<p>继承允许我们有一个相互关联的类的层次结构，即它允许我们有一个包含公共功能的基类，然后它允许我们从那个(基)类中分离出来，从最初的父类中创建子类</p>
+<p>这些类、继承等如此有用的原因是它可以帮助我们避免代码重复，我们可以把类之间所有的公共功能放在一个父类中，然后从基类(父类)创建(派生)一些类，稍微改变下功能，或者引入全新的功能</p>
+<p>看在代码中的应用</p>
+<pre><code class="language-c++">//假设有一个Entity类，他将管理游戏中所有实体对象
+class Entity{
+    //例如，每个实体在我们的游戏中都有自己的位置
+public:
+    float X,Y;
+    //赋予每个实体移动的能力
+    void Move(float xa, float ya) {
+        X += xa;
+        Y += ya;
+    }
+
+    //至此，创建了一个和积累Entity,在游戏中的每个实体都将具有这些特征
+}
+
+    //下面创建一个新的类Player
+
+    //我们可以扩展这个Entity实体类，来创建一个名为Player的新类型，然后让他储存新数据
+
+    class Player{
+public:
+    const char* Name;
+    float X,Y;
+
+    void Move(float xa, float ya) {
+        X += xa;
+        Y += ya;
+    }
+
+    void PrintName(){
+        std:&lt;&lt;Name&lt;&lt;std::endl;
+    }
+    }
+
+</code></pre>
+<p>现在把Player变成Entity的子类：在类型声明后写一个冒号，然后写public Entity</p>
+<pre><code class="language-C++">  class Player : public Entity
+</code></pre>
+<pre><code>Player类现在不仅拥有Player类型，而且它也有Entity类型
+
+Player现在拥有Entity拥有的所有东西。任何在Entity中```不是私有```的东西，都可以被Player访问，比如X和Y.所以可以把Player中重复的代码都去掉
+
+``` C++
+class Player : public Entity{
+    const char* Name;
+    void PrintName(){
+        std:&lt;&lt;Name&lt;&lt;std::endl;
+    }
+}
+</code></pre>
+<pre><code>可以有下面的用法
+
+``` C++
+    int main(){
+        Player player;
+        player.PrintfName();
+        player.Move(5,5);
+        player.X = 2;
+    }
+</code></pre>
+<p>其实我们可以应用到概念是叫做&quot;多态&quot;,多态是一个单一类型，但是有多个类型的意思.</p>
+<p>Player包含Emtity所有的东西再多一些，甚至可以不加这些多的东西，与Entity完全一样，但Player总是Entity的超集（父类是子类的子集）</p>
+<p>总的来说，继承是我们扩展现有类并为基类提供新功能的一种方式</p>
+<p>补充：C++有三种继承方法，public,protected,private</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">继承方式</th>
+<th style="text-align:center">基类的public成员</th>
+<th style="text-align:center">基类的protected成员</th>
+<th style="text-align:center">基类的private成员</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">public继承</td>
+<td style="text-align:center">仍为public成员</td>
+<td style="text-align:center">仍为protected成员</td>
+<td style="text-align:center">不可访问</td>
+</tr>
+<tr>
+<td style="text-align:center">protected继承</td>
+<td style="text-align:center">变为protected成员</td>
+<td style="text-align:center">变为protected成员</td>
+<td style="text-align:center">不可访问</td>
+</tr>
+<tr>
+<td style="text-align:center">private继承</td>
+<td style="text-align:center">变为private成员</td>
+<td style="text-align:center">变为private成员</td>
+<td style="text-align:center">不可访问</td>
+</tr>
+</tbody>
+</table>
+<h2 id="10虚函数"><strong>10.虚函数</strong></h2>
+<p>虚函数允许我们在子类中重写方法。假设我们有两个类A和B ,B是A派生出来的，即B是A的子类。如果我们在A中创建一个方法，标记为virtual,我们可以选择在B类中重写那个方法，让它做其他的事情</p>
+<h2 id="11接口纯虚函数"><strong>11.接口（纯虚函数）</strong></h2>
+<p>纯虚函数允许我们在基类中定义一个没有实现的函数，然后在派生类中实现它。这样，我们就可以在基类中使用这个函数，但是我们不知道它是如何实现的，这就是接口</p>
+<pre><code class="language-C++">virtual std::string GetName() = 0;
+
+</code></pre>
+<blockquote>
+<p>未掌握</p>
+</blockquote>
+<h2 id="可见性"><strong>可见性</strong></h2>
+<p>可见性指的是对于类的某些成员或方法，谁能看到他们，谁能调用他们，谁能使用它们。<br>
+可见性是对程序实际运行方式完全没有影响的东西，对程序性能或类似的东西也没有影响。</p>
+<p>C++中有三个基础的可见性修饰符private,protected,public</p>
+<p>在其他语言有其他的关键字</p>
+<h3 id="private"><strong>private</strong></h3>
+<p>private成员只能(*特殊：friends 友元)被类的成员函数访问，不能被类的外部访问，<code>也不能被派生类访问</code></p>
+<h3 id="protected"><strong>protected</strong></h3>
+<p>protected比private更可见,比public更不可见</p>
+<p>protected指的是这个类和其所有子类都可以访问</p>
+<h3 id="public"><strong>public</strong></h3>
+<p>意味着所有人都可以访问它，包括在main函数的内部</p>
+<hr>
+<p><code>关于可见性的作用</code><br>
+首先，public公开一切纯粹是一个糟糕的想法，对于开发者和写代码而言这是风格问题，是如何写好代码的问题。可见性让代码更加容易维护，容易理解，不管是阅读代码还是扩展代码，与性能无关</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[MySQL]]></title>
+        <id>https://Fzztrn8.github.io/post/mysql/</id>
+        <link href="https://Fzztrn8.github.io/post/mysql/">
+        </link>
+        <updated>2025-07-04T08:30:44.000Z</updated>
+        <content type="html"><![CDATA[<p>#MySQL #SQL</p>
+<figure data-type="image" tabindex="1"><img src="https://bu.dusays.com/2024/08/03/66ae01e207d08.png" alt="image.png" loading="lazy"></figure>
+<h1 id="1创建数据库">1.创建数据库</h1>
+<p>使用下面的语句来创建一个名称为sql_tutorial的数据库</p>
+<pre><code class="language-MySQL">CREATE DATABASE `sql_tutorial`;
+</code></pre>
+<p>还可以展示所有的数据库</p>
+<pre><code class="language-MySQL">SHOW DATABASES;
+</code></pre>
+<p>选择使用数据库：</p>
+<pre><code class="language-MySQL">USE `sql_tutorial`;
+</code></pre>
+<p>一个数据库中包含多个表格<code>table</code>，可将表格中的属性设置为<code>key</code>,由此可以让表格之间产生关联<br>
+其中,<code>primary key</code>（主键）可以唯一表示某一条数据，而<code>foreign key</code>（外键）可以对应到另一张表格的<code>primaryk key</code></p>
+<p>同一个表格可以有多个<code>primary key</code>，因为数据可能相同，需要多个属性才能唯一确定一条数据,例如下面的表格</p>
+<table>
+<thead>
+<tr>
+<th>emp_id</th>
+<th>client_id</th>
+<th>total_sales</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>206</td>
+<td>400</td>
+<td>70000</td>
+</tr>
+<tr>
+<td>207</td>
+<td>401</td>
+<td>24000</td>
+</tr>
+<tr>
+<td>208</td>
+<td>400</td>
+<td>9800</td>
+</tr>
+<tr>
+<td>208</td>
+<td>403</td>
+<td>24000</td>
+</tr>
+<tr>
+<td>210</td>
+<td>404</td>
+<td>87940</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-MySQL">-- 使用下面的语句创建表格
+CREATE TABLE `student`(
+	`student_id` INT AUTO_INCREMENT,
+	`name` VARCHAR(20) NOT NULL,
+	`major` VARCHAR(20) DEFAULT '历史',
+	`score` INT,
+	PRIMARY KEY(`student_id`)
+)
+</code></pre>
+<p><code>AUTO_INCREMENT</code>的作用是每次添加数据，<code>student_id</code>便会自动增长<br>
+<code>NOT NULL</code>的作用是<code>name</code>不可被设置为NULL<br>
+<code>DEFAULT</code>很显然就是设置默认值</p>
+<p>在上面的示例中反引号内为表格各个属性的名称 其后为类型，在MySQL中，有以下类型</p>
+<table>
+<thead>
+<tr>
+<th>INT</th>
+<th>整数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DECIMAL(3，2)</td>
+<td>有小数点的数，第一个参数表示总 位数，第二个表示小数点后位数</td>
+</tr>
+<tr>
+<td>VARCHAR(n)</td>
+<td>字串，参数为长度</td>
+</tr>
+<tr>
+<td>BLOB</td>
+<td>(Binary Large Object) 图片、视频、等</td>
+</tr>
+<tr>
+<td>DATE</td>
+<td>日期'YYYY-MM-DD'</td>
+</tr>
+<tr>
+<td>TIMESTAMP</td>
+<td>记录时间 'YYYY-MM-DD HH:MM:SS'</td>
+</tr>
+</tbody>
+</table>
+<p>查看表格:</p>
+<pre><code class="language-MySQL">DESCRIBE `student`;
+</code></pre>
+<p>删除表格</p>
+<pre><code class="language-MySQL">DROP TABLE `student`;
+</code></pre>
+<p>修改表格</p>
+<pre><code class="language-MySQL">ALTER TABLE `student` ADD gpa DECIMAL(3,2);  -- 添加属性
+ALTER TABLE `student` DROP COLUMN gpa; -- 删除属性
+</code></pre>
+<h1 id="2数据操作">2.数据操作</h1>
+<p>创建好表格后，就可以开始存储数据</p>
+<pre><code class="language-MySQL">INSERT INTO `student` VALUES('小黑','英语',90) -- 按照顺序填入参数
+INSERT INTO `student`(`name`,`major`,`score`) VALUES('小蓝','英语'77,)-- 也可以自己指定顺序
+</code></pre>
+<p>如果我们想要将表格中的一些数据进行更新，可以使用UPDATE便可以将表格中所有的<code>英语</code>更改为<code>英语文学</code></p>
+<pre><code class="language-MySQL">UPDATE `student` 
+SET `major` = '英语文学'
+WHERE `major` = '英语';
+</code></pre>
+<p>当然，语句中的条件可以不止一个，要改变的内容也可以不止一个</p>
+<blockquote>
+<p>注意：MySQL的不等于号为<code>&lt;&gt;</code></p>
+</blockquote>
+<pre><code class="language-MySQL">UPDATE `student` 
+SET `major` = '生化',`name` = '小虎'
+WHERE `major` = '生物' OR `major` = '化学';
+</code></pre>
+<p>同理还可以使用<code>AND</code>连接，此外还可以使用<code>IN</code>来设置条件</p>
+<pre><code class="language-MySQL">UPDATE `student` 
+SET `major` = '生化',`name` = '小虎'
+WHERE `major` IN ('历史','英语','生物');
+</code></pre>
+<p>删除数据与更新数据的写法类似</p>
+<pre><code class="language-MySQL">DELETE FROM `student`
+WHERE `student_id` = 4;  -- 删除student_id为4的数据
+
+-- 不写条件判断删除所有数据
+DELETE FROM `student`;
+</code></pre>
+<h1 id="3获取数据">3.获取数据</h1>
+<p>当我们想要获取表格中的数据，可以使用<code>SELECT</code></p>
+<pre><code class="language-MySQL">-- 这个命令会获取表格所有的属性，我们可以使用具体的属性替换'*'
+SELECT * FROM `student`;
+
+SELCET `name`,`major` FROM `student`;
+</code></pre>
+<p>在获取数据时，我们可以对其排序，还可以使用<code>LIMITT</code>来限制传回数据的数量</p>
+<pre><code class="language-MySQL">-- 下面就是获取所有属性并根据分数排序（默认是由低到高ASC）
+SELECT * 
+FROM `student`
+ORDER BY `score`;
+-- 在后面加上DESC就可以实现由高到低排序
+SELECT *
+FROM `student`
+ORDER BY `score` DESC
+LIMIT 3；
+-- 若ORDER BY后有多个属性，就会先根据第一个进行排序，若有相同项再对比第二项
+</code></pre>
+<p>如果想要无重复取得</p>
+<pre><code class="language-MySQL">SELECT DISTINCT `sex` FROM `employee`
+</code></pre>
+<p>表格中外键的设置</p>
+<pre><code class="language-MySQL">FOREIGN KEY(`manage_id`) REFERENCES `employee`(`emp_id`) ON DELETE SET NULL
+
+-- 例如在这里若foriegn key所对应的内容被删除，则manage_id会被设置为NULL
+     -- primariy key不能被设置为NULL
+     
+     --  FOREIGN KEY (`emp_id`) REFERENCES `employee`(`emp_id`) ON DELETE CASCADE,
+     -- 同理，这里的对应会一起删掉
+</code></pre>
+<p>我们在创建表格时，再<code>FOREIGN KEY</code>后加上<code>ON DELETE SET NULL</code>或者<code>ON DELETE CASCADE</code>,这两种分别代表这个外键所引用的参数被销毁时其本身是设置为NULL还是跟随一起删除</p>
+<h1 id="其他指令">其他指令</h1>
+<h2 id="聚合函数-aggregate-functiomns">聚合函数 --aggregate functiomns</h2>
+<p>下面用一些例子来演示其功能</p>
+<pre><code class="language-MySQL">	-- 取得员工人数
+    SELECT COUNT(`sup_id`) FROM `employee`;
+    
+    -- 取得该公司出生于1970-01-01之后的女性员工人数
+    SELECT COUNT(*) FROM `employee` WHERE `birth_date` &gt; '1970-01-01' AND `sex` = 'F';
+    
+    -- 取得所有员工的平均薪水
+    SELECT AVG(`salary`) FROM `employee`;
+    
+    -- 取得所有员工薪水的总和
+    SELECT SUM(`salary`) FROM `employee`;
+    
+    -- 取得薪水最高的员工
+    SELECT MAX(`salary`) FROM `employee`;
+    
+    -- 取得薪水最低的员工
+     SELECT MIN(`salary`) FROM `employee`;
+</code></pre>
+<h2 id="wildcards-万用字元">wildcards 万用字元</h2>
+<p>% 代表多个字元，_ 代表一个字元</p>
+<pre><code class="language-MySQL">	-- 取得电话号码尾数是235的客户
+	SELECT * 
+    FROM `cilent` 
+    WHERE `phone` LIKE '%235';
+
+	-- 取得姓艾的客户
+    SELECT *
+    FROM `cilent`
+    WHERE `cilent_name` LIKE '艾%';
+    
+    -- 取得生日为12月的员工
+    SELECT *
+    FROM `employee`
+    WHERE `birth_date` LIKE '_____12%';
+</code></pre>
+<h2 id="union">UNION</h2>
+<pre><code class="language-MySQL">	-- 员工名字 union 客户名字
+    SELECT `name` 
+    FROM `employee`
+    UNION
+    SELECT`cilent_name`
+    FROM `cilent`;
+		-- 无法将搜索一个属性和搜索两个属性合并在一起且两个做合并的属性一样
+        
+
+    -- 员工id + 员工名字 union 客户id + 客户名字
+	SELECT `emp_id` AS `total_id`,`name` AS `total_name`
+    FROM `employee`
+    UNION
+    SELECT `cilent_id`,`cilent_name`
+    FROM `cilent`;
+    
+    -- 员工薪水 union 销售金额
+    
+    SELECT `salary`
+    FROM `employee`
+    UNION
+    SELECT `total_sales`
+    FROM `work_with`;
+</code></pre>
+<h2 id="join连接">JOIN连接</h2>
+<pre><code class="language-MySQL">	INSERT INTO `branch` VALUES(4,'偷懒',NULL);
+    
+	-- 取得所有部门经理的名字
+	SELECT `emp_id`,`name`,`branch_name`
+    FROM `employee`
+    LEFT JOIN `branch`
+    ON `employee`.`emp_id` =`branch`.`manage_id`;
+	-- ON `emp_id` = `manage_id`
+    -- 若有属性名字相同，在前加上表格名称
+    -- ON `employee`.`emp_id =`branch`.`manager_id`;
+        
+    -- LEFT JOIN 左边的表格无论条件是否成立都会回传，右边表格判断条件成立 RIGHT JOIN同理
+</code></pre>
+<h2 id="子查询subquery">子查询subquery</h2>
+<pre><code class="language-MySQL">	-- 找出研发部门经理的名字
+    
+		SELECT `name`
+        FROM`employee`
+        WHERE `emp_id` = (
+			SELECT `manage_id`
+			FROM `branch`
+			WHERE `branch_name` = '研发'
+        );
+		
+    -- 找出对单一位客户销售金额超50000员工的名字
+		SELECT `name`
+        FROM `employee`
+        WHERE`emp_id`  IN(
+			SELECT `emp_id`
+            FROM `work_with`
+            WHERE `total_sales` &gt; 50000
+        );
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Hello Gridea]]></title>
+        <id>https://Fzztrn8.github.io/post/hello-gridea/</id>
+        <link href="https://Fzztrn8.github.io/post/hello-gridea/">
+        </link>
+        <updated>2018-12-11T16:00:00.000Z</updated>
+        <summary type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
+✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意... ...</p>
+]]></summary>
+        <content type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
+✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意... ...</p>
+<!-- more -->
+<p><a href="https://github.com/getgridea/gridea">Github</a><br>
+<a href="https://gridea.dev/">Gridea 主页</a><br>
+<a href="https://fehey.com/">示例网站</a></p>
+<h2 id="特性">特性👇</h2>
+<p>📝  你可以使用最酷的 <strong>Markdown</strong> 语法，进行快速创作</p>
+<p>🌉  你可以给文章配上精美的封面图和在文章任意位置插入图片</p>
+<p>🏷️  你可以对文章进行标签分组</p>
+<p>📋  你可以自定义菜单，甚至可以创建外部链接菜单</p>
+<p>💻  你可以在 <strong>Windows</strong>，<strong>MacOS</strong> 或 <strong>Linux</strong> 设备上使用此客户端</p>
+<p>🌎  你可以使用 <strong>𝖦𝗂𝗍𝗁𝗎𝖻 𝖯𝖺𝗀𝖾𝗌</strong> 或 <strong>Coding Pages</strong> 向世界展示，未来将支持更多平台</p>
+<p>💬  你可以进行简单的配置，接入 <a href="https://github.com/gitalk/gitalk">Gitalk</a> 或 <a href="https://github.com/SukkaW/DisqusJS">DisqusJS</a> 评论系统</p>
+<p>🇬🇧  你可以使用<strong>中文简体</strong>或<strong>英语</strong></p>
+<p>🌁  你可以任意使用应用内默认主题或任意第三方主题，强大的主题自定义能力</p>
+<p>🖥  你可以自定义源文件夹，利用 OneDrive、百度网盘、iCloud、Dropbox 等进行多设备同步</p>
+<p>🌱 当然 <strong>Gridea</strong> 还很年轻，有很多不足，但请相信，它会不停向前 🏃</p>
+<p>未来，它一定会成为你离不开的伙伴</p>
+<p>尽情发挥你的才华吧！</p>
+<p>😘 Enjoy~</p>
+]]></content>
+    </entry>
+</feed>

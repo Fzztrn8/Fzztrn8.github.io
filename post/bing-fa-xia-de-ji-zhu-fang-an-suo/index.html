@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>并发下的技术方案（锁） | Fzztrn8</title>
+<meta name="description" content="温故而知新">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://Fzztrn8.github.io/favicon.ico?v=1763720907022">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://Fzztrn8.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://Fzztrn8.github.io">
+        <img class="avatar" src="https://Fzztrn8.github.io/images/avatar.png?v=1763720907022" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://Fzztrn8.github.io">
+        <h1 class="site-title">Fzztrn8</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+            <div class="feature-container" style="background-image: url('https://Fzztrn8.github.io/post-images/bing-fa-xia-de-ji-zhu-fang-an-suo.png')">
+            </div>
+          
+          <h2 class="post-title">并发下的技术方案（锁）</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2025-11-21</span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <p>#Linux</p>
+<p><mark>十个线程同时对count加十万，输出发现不能准确达到100万</mark></p>
+<p>原因：</p>
+<p>count被分解为三条原子操作</p>
+<img src="https://s2.loli.net/2025/11/17/3wefIbpdLSxvl26.png">
+<p>在执行过程中发生了线程切换，导致访问临界资源时出现数据竞争</p>
+<img src="https://s2.loli.net/2025/11/17/OWs7v5USznu8Z2N.png" />
+<p>解决方法：</p>
+<ul>
+<li>
+<p>互斥锁(mutex):</p>
+<pre><code class="language-C">   pthread_mutex_lock(&amp;mutex);
+   (*pcount)++;
+   pthread_mutex_unlock(&amp;mutex);
+</code></pre>
+<p>互斥锁访问的临界资源被占用时会让出CPU进入阻塞态。在临界资源占用时间较长时使用互斥锁，比如线程安全的rbtree</p>
+</li>
+<li>
+<p>自旋锁(spinlock):</p>
+<p>自旋锁访问的临界资源被占用时会<strong>保持等待</strong>，如果临界资源被占用的时间<strong>非常短</strong>，自旋锁可以节省线程切换的开销</p>
+</li>
+<li>
+<p>原子操作：用单条CPU指令实现</p>
+<pre><code class="language-C">int inc(int *value,int add){
+
+    int old;
+
+    __asm__ volatile(         //内联汇编语法
+        &quot;lock; xaddl %2, %1;&quot;
+        :&quot;=a&quot; (old)
+        :&quot;m&quot; (*value),&quot;a&quot;(add)
+        :&quot;cc&quot;,&quot;memory&quot;  
+
+    );
+
+     return old;
+}
+
+
+
+inc(pcount,1);
+</code></pre>
+</li>
+</ul>
+<p>CAS --&gt; Compare And Swap --&gt;</p>
+<pre><code class="language-C">if (a==b){
+    a = c;
+}
+</code></pre>
+<pre><code class="language-c">int cas(int *ptr,int expected,int new_val){
+	__asm__ __volatile__(
+    &quot;lock cmpxchgl %2 %1;&quot;
+     :&quot;+a&quot;(expected), &quot;+m&quot;(*ptr)
+     :&quot;r&quot;(new_val)
+     :&quot;memory&quot;,&quot;cc&quot;
+    )
+
+}
+</code></pre>
+<h3 id="线程池">线程池</h3>
+<p>服务器在服务多个客户端时，使用多线程的方式</p>
+<p>而服务器资源有限，不能无限新建线程，故使用线程池：</p>
+<blockquote>
+<p>1.避免线程太多，使得内存耗尽</p>
+<p>2.避免创建与销毁线程的代价</p>
+<p>3.任务与执行分离</p>
+</blockquote>
+<p>例如对于日志文件，磁盘操作比内存操作慢很多，所以在写日志时会引起线程的挂起</p>
+<p>将写日志文件的<strong>任务</strong>交给线程池</p>
+<p>银行的例子：</p>
+<ul>
+<li>
+<p>办业务的人 -&gt; 任务队列</p>
+</li>
+<li>
+<p>柜员 -&gt; 执行队列</p>
+</li>
+<li>
+<p>公示牌 -&gt; 管理组件(防止多个办业务的人在一个柜台办理，两个柜员同时为一个客户办理)</p>
+<ul>
+<li>锁</li>
+</ul>
+</li>
+</ul>
+<p>线程池的实现</p>
+<p>任务队列</p>
+<pre><code class="language-C">struct nTask{
+    void (*task_function)(void *arg);
+    void *user_data;  //用来做任务执行的参数
+
+    struct nTask *prev;
+    struct nTask *next;
+};
+</code></pre>
+<p>执行队列</p>
+<pre><code class="language-C">struct nWorker{
+    pthread_t threadid;
+
+    struct nWorker *prev;
+    struct nWorker *next;
+};
+
+</code></pre>
+<p>管理组件</p>
+<pre><code class="language-C">typedef struct nManager{
+    struct nTask *tasks;
+    struct nWorker *workers;
+
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;  //条件变量
+
+}ThreadPool;
+</code></pre>
+<p>四个接口</p>
+<pre><code class="language-C">static void *nThreadPoolCallback(void *arg){
+
+}
+
+int nThreadPoolCreate(ThreadPool *pool,int nWorker){
+
+}
+
+
+int nThreadPoolDestory(ThreadPool *pool,int nWorker){
+
+}
+
+int nThreadPoolPushTask(ThreadPool *pool, struct nTask *task){
+
+}
+</code></pre>
+<p><strong>nThreadPoolCreate</strong></p>
+<p>用于初始化线程池，创建指定数量的工作线程，需要对状态变量和互斥锁初始化，再创建工作线程</p>
+<p><strong>nThreadPoolPushTask</strong></p>
+<p>将任务插入线程池的任务队列</p>
+<p>在加入后，通过<code>pthread_cond_signal</code>唤醒一个工作线程</p>
+<p><strong>nThreadPoolCallback</strong></p>
+<p>工作线程的核心循环：取任务-&gt;执行任务-&gt;循环使用双层循环，外层<code>while(1)</code>是线程主循环，内层循环当任务队列为空且未收到终止信号时将线程阻塞在cond变量</p>
+<p>若有任务，则取出任务并将其从任务队列删除，之后执行任务</p>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://Fzztrn8.github.io/post/c-iii/">
+              <h3 class="post-title">
+                下一篇：C++ Ⅲ
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">温故而知新</div>
+  <div class="social-container">
+    
+      
+        <a href="https://github.com/Fzztrn8" target="_blank">
+          <i class="fab fa-github"></i>
+        </a>
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://Fzztrn8.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,413 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>MySQL | Fzztrn8</title>
+<meta name="description" content="温故而知新">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://Fzztrn8.github.io/favicon.ico?v=1763720907022">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://Fzztrn8.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://Fzztrn8.github.io">
+        <img class="avatar" src="https://Fzztrn8.github.io/images/avatar.png?v=1763720907022" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://Fzztrn8.github.io">
+        <h1 class="site-title">Fzztrn8</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+            <div class="feature-container" style="background-image: url('https://Fzztrn8.github.io/post-images/mysql.png')">
+            </div>
+          
+          <h2 class="post-title">MySQL</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2025-07-04</span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <p>#MySQL #SQL</p>
+<figure data-type="image" tabindex="1"><img src="https://bu.dusays.com/2024/08/03/66ae01e207d08.png" alt="image.png" loading="lazy"></figure>
+<h1 id="1创建数据库">1.创建数据库</h1>
+<p>使用下面的语句来创建一个名称为sql_tutorial的数据库</p>
+<pre><code class="language-MySQL">CREATE DATABASE `sql_tutorial`;
+</code></pre>
+<p>还可以展示所有的数据库</p>
+<pre><code class="language-MySQL">SHOW DATABASES;
+</code></pre>
+<p>选择使用数据库：</p>
+<pre><code class="language-MySQL">USE `sql_tutorial`;
+</code></pre>
+<p>一个数据库中包含多个表格<code>table</code>，可将表格中的属性设置为<code>key</code>,由此可以让表格之间产生关联<br>
+其中,<code>primary key</code>（主键）可以唯一表示某一条数据，而<code>foreign key</code>（外键）可以对应到另一张表格的<code>primaryk key</code></p>
+<p>同一个表格可以有多个<code>primary key</code>，因为数据可能相同，需要多个属性才能唯一确定一条数据,例如下面的表格</p>
+<table>
+<thead>
+<tr>
+<th>emp_id</th>
+<th>client_id</th>
+<th>total_sales</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>206</td>
+<td>400</td>
+<td>70000</td>
+</tr>
+<tr>
+<td>207</td>
+<td>401</td>
+<td>24000</td>
+</tr>
+<tr>
+<td>208</td>
+<td>400</td>
+<td>9800</td>
+</tr>
+<tr>
+<td>208</td>
+<td>403</td>
+<td>24000</td>
+</tr>
+<tr>
+<td>210</td>
+<td>404</td>
+<td>87940</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-MySQL">-- 使用下面的语句创建表格
+CREATE TABLE `student`(
+	`student_id` INT AUTO_INCREMENT,
+	`name` VARCHAR(20) NOT NULL,
+	`major` VARCHAR(20) DEFAULT '历史',
+	`score` INT,
+	PRIMARY KEY(`student_id`)
+)
+</code></pre>
+<p><code>AUTO_INCREMENT</code>的作用是每次添加数据，<code>student_id</code>便会自动增长<br>
+<code>NOT NULL</code>的作用是<code>name</code>不可被设置为NULL<br>
+<code>DEFAULT</code>很显然就是设置默认值</p>
+<p>在上面的示例中反引号内为表格各个属性的名称 其后为类型，在MySQL中，有以下类型</p>
+<table>
+<thead>
+<tr>
+<th>INT</th>
+<th>整数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DECIMAL(3，2)</td>
+<td>有小数点的数，第一个参数表示总 位数，第二个表示小数点后位数</td>
+</tr>
+<tr>
+<td>VARCHAR(n)</td>
+<td>字串，参数为长度</td>
+</tr>
+<tr>
+<td>BLOB</td>
+<td>(Binary Large Object) 图片、视频、等</td>
+</tr>
+<tr>
+<td>DATE</td>
+<td>日期'YYYY-MM-DD'</td>
+</tr>
+<tr>
+<td>TIMESTAMP</td>
+<td>记录时间 'YYYY-MM-DD HH:MM:SS'</td>
+</tr>
+</tbody>
+</table>
+<p>查看表格:</p>
+<pre><code class="language-MySQL">DESCRIBE `student`;
+</code></pre>
+<p>删除表格</p>
+<pre><code class="language-MySQL">DROP TABLE `student`;
+</code></pre>
+<p>修改表格</p>
+<pre><code class="language-MySQL">ALTER TABLE `student` ADD gpa DECIMAL(3,2);  -- 添加属性
+ALTER TABLE `student` DROP COLUMN gpa; -- 删除属性
+</code></pre>
+<h1 id="2数据操作">2.数据操作</h1>
+<p>创建好表格后，就可以开始存储数据</p>
+<pre><code class="language-MySQL">INSERT INTO `student` VALUES('小黑','英语',90) -- 按照顺序填入参数
+INSERT INTO `student`(`name`,`major`,`score`) VALUES('小蓝','英语'77,)-- 也可以自己指定顺序
+</code></pre>
+<p>如果我们想要将表格中的一些数据进行更新，可以使用UPDATE便可以将表格中所有的<code>英语</code>更改为<code>英语文学</code></p>
+<pre><code class="language-MySQL">UPDATE `student` 
+SET `major` = '英语文学'
+WHERE `major` = '英语';
+</code></pre>
+<p>当然，语句中的条件可以不止一个，要改变的内容也可以不止一个</p>
+<blockquote>
+<p>注意：MySQL的不等于号为<code>&lt;&gt;</code></p>
+</blockquote>
+<pre><code class="language-MySQL">UPDATE `student` 
+SET `major` = '生化',`name` = '小虎'
+WHERE `major` = '生物' OR `major` = '化学';
+</code></pre>
+<p>同理还可以使用<code>AND</code>连接，此外还可以使用<code>IN</code>来设置条件</p>
+<pre><code class="language-MySQL">UPDATE `student` 
+SET `major` = '生化',`name` = '小虎'
+WHERE `major` IN ('历史','英语','生物');
+</code></pre>
+<p>删除数据与更新数据的写法类似</p>
+<pre><code class="language-MySQL">DELETE FROM `student`
+WHERE `student_id` = 4;  -- 删除student_id为4的数据
+
+-- 不写条件判断删除所有数据
+DELETE FROM `student`;
+</code></pre>
+<h1 id="3获取数据">3.获取数据</h1>
+<p>当我们想要获取表格中的数据，可以使用<code>SELECT</code></p>
+<pre><code class="language-MySQL">-- 这个命令会获取表格所有的属性，我们可以使用具体的属性替换'*'
+SELECT * FROM `student`;
+
+SELCET `name`,`major` FROM `student`;
+</code></pre>
+<p>在获取数据时，我们可以对其排序，还可以使用<code>LIMITT</code>来限制传回数据的数量</p>
+<pre><code class="language-MySQL">-- 下面就是获取所有属性并根据分数排序（默认是由低到高ASC）
+SELECT * 
+FROM `student`
+ORDER BY `score`;
+-- 在后面加上DESC就可以实现由高到低排序
+SELECT *
+FROM `student`
+ORDER BY `score` DESC
+LIMIT 3；
+-- 若ORDER BY后有多个属性，就会先根据第一个进行排序，若有相同项再对比第二项
+</code></pre>
+<p>如果想要无重复取得</p>
+<pre><code class="language-MySQL">SELECT DISTINCT `sex` FROM `employee`
+</code></pre>
+<p>表格中外键的设置</p>
+<pre><code class="language-MySQL">FOREIGN KEY(`manage_id`) REFERENCES `employee`(`emp_id`) ON DELETE SET NULL
+
+-- 例如在这里若foriegn key所对应的内容被删除，则manage_id会被设置为NULL
+     -- primariy key不能被设置为NULL
+     
+     --  FOREIGN KEY (`emp_id`) REFERENCES `employee`(`emp_id`) ON DELETE CASCADE,
+     -- 同理，这里的对应会一起删掉
+</code></pre>
+<p>我们在创建表格时，再<code>FOREIGN KEY</code>后加上<code>ON DELETE SET NULL</code>或者<code>ON DELETE CASCADE</code>,这两种分别代表这个外键所引用的参数被销毁时其本身是设置为NULL还是跟随一起删除</p>
+<h1 id="其他指令">其他指令</h1>
+<h2 id="聚合函数-aggregate-functiomns">聚合函数 --aggregate functiomns</h2>
+<p>下面用一些例子来演示其功能</p>
+<pre><code class="language-MySQL">	-- 取得员工人数
+    SELECT COUNT(`sup_id`) FROM `employee`;
+    
+    -- 取得该公司出生于1970-01-01之后的女性员工人数
+    SELECT COUNT(*) FROM `employee` WHERE `birth_date` &gt; '1970-01-01' AND `sex` = 'F';
+    
+    -- 取得所有员工的平均薪水
+    SELECT AVG(`salary`) FROM `employee`;
+    
+    -- 取得所有员工薪水的总和
+    SELECT SUM(`salary`) FROM `employee`;
+    
+    -- 取得薪水最高的员工
+    SELECT MAX(`salary`) FROM `employee`;
+    
+    -- 取得薪水最低的员工
+     SELECT MIN(`salary`) FROM `employee`;
+</code></pre>
+<h2 id="wildcards-万用字元">wildcards 万用字元</h2>
+<p>% 代表多个字元，_ 代表一个字元</p>
+<pre><code class="language-MySQL">	-- 取得电话号码尾数是235的客户
+	SELECT * 
+    FROM `cilent` 
+    WHERE `phone` LIKE '%235';
+
+	-- 取得姓艾的客户
+    SELECT *
+    FROM `cilent`
+    WHERE `cilent_name` LIKE '艾%';
+    
+    -- 取得生日为12月的员工
+    SELECT *
+    FROM `employee`
+    WHERE `birth_date` LIKE '_____12%';
+</code></pre>
+<h2 id="union">UNION</h2>
+<pre><code class="language-MySQL">	-- 员工名字 union 客户名字
+    SELECT `name` 
+    FROM `employee`
+    UNION
+    SELECT`cilent_name`
+    FROM `cilent`;
+		-- 无法将搜索一个属性和搜索两个属性合并在一起且两个做合并的属性一样
+        
+
+    -- 员工id + 员工名字 union 客户id + 客户名字
+	SELECT `emp_id` AS `total_id`,`name` AS `total_name`
+    FROM `employee`
+    UNION
+    SELECT `cilent_id`,`cilent_name`
+    FROM `cilent`;
+    
+    -- 员工薪水 union 销售金额
+    
+    SELECT `salary`
+    FROM `employee`
+    UNION
+    SELECT `total_sales`
+    FROM `work_with`;
+</code></pre>
+<h2 id="join连接">JOIN连接</h2>
+<pre><code class="language-MySQL">	INSERT INTO `branch` VALUES(4,'偷懒',NULL);
+    
+	-- 取得所有部门经理的名字
+	SELECT `emp_id`,`name`,`branch_name`
+    FROM `employee`
+    LEFT JOIN `branch`
+    ON `employee`.`emp_id` =`branch`.`manage_id`;
+	-- ON `emp_id` = `manage_id`
+    -- 若有属性名字相同，在前加上表格名称
+    -- ON `employee`.`emp_id =`branch`.`manager_id`;
+        
+    -- LEFT JOIN 左边的表格无论条件是否成立都会回传，右边表格判断条件成立 RIGHT JOIN同理
+</code></pre>
+<h2 id="子查询subquery">子查询subquery</h2>
+<pre><code class="language-MySQL">	-- 找出研发部门经理的名字
+    
+		SELECT `name`
+        FROM`employee`
+        WHERE `emp_id` = (
+			SELECT `manage_id`
+			FROM `branch`
+			WHERE `branch_name` = '研发'
+        );
+		
+    -- 找出对单一位客户销售金额超50000员工的名字
+		SELECT `name`
+        FROM `employee`
+        WHERE`emp_id`  IN(
+			SELECT `emp_id`
+            FROM `work_with`
+            WHERE `total_sales` &gt; 50000
+        );
+</code></pre>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://Fzztrn8.github.io/post/hello-gridea/">
+              <h3 class="post-title">
+                下一篇：Hello Gridea
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">温故而知新</div>
+  <div class="social-container">
+    
+      
+        <a href="https://github.com/Fzztrn8" target="_blank">
+          <i class="fab fa-github"></i>
+        </a>
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://Fzztrn8.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

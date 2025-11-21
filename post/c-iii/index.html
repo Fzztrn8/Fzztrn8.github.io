@@ -1,0 +1,471 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>C++ Ⅲ | Fzztrn8</title>
+<meta name="description" content="温故而知新">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://Fzztrn8.github.io/favicon.ico?v=1763720907022">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://Fzztrn8.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://Fzztrn8.github.io">
+        <img class="avatar" src="https://Fzztrn8.github.io/images/avatar.png?v=1763720907022" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://Fzztrn8.github.io">
+        <h1 class="site-title">Fzztrn8</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+            <div class="feature-container" style="background-image: url('https://s2.loli.net/2025/11/21/CfUsEAlxjWevdpT.png')">
+            </div>
+          
+          <h2 class="post-title">C++ Ⅲ</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2025-07-04</span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <h1 id="三"><strong>三</strong></h1>
+<h2 id="cpp的对象生存期栈作用域生存期">Cpp的对象生存期（栈作用域生存期）</h2>
+<p>简言之，在作用域内在栈上创建的变量会在作用域结束时被销毁。对于在堆上创造的变量，也可以通过构造函数和析构函数自动删除。</p>
+<h2 id="cpp的智能指针">Cpp的智能指针</h2>
+<p>智能指针本质上是一个原始指针的包装，当你创建一个智能指针，它会调用new为你分配内存，然后基于你使用的智能指针，这些内存会在某一时刻自动释放。首先是最简单的unique_ptr</p>
+<h3 id="unique_ptr">unique_ptr</h3>
+<p>unique_ptr是作用域指针，是超出作用域时，它会被销毁，然后调用delete。之所以叫unique_ptr，是因为你不能复制一个unique_ptr,如果你复制一个unique_ptr,那么你会有两个指针，两个unique_ptr指向同一个内存块，如果其中一个被销毁，他会释放那段内存，那么指向同一块内存的第二个unique_ptr指向了已经被释放的内存，所以不能复制unique_ptr。</p>
+<p>example:</p>
+<pre><code class="language-Cpp">class Entity
+{
+    public:
+        Entity()
+        {
+            std::cout &lt;&lt; &quot;Creaded Entity&quot; &lt;&lt; std::endl;
+        }
+
+        ~Entity()
+        {
+            std::cout &lt;&lt; &quot;Destroyed Entity&quot; &lt;&lt; std::endl;
+        }
+
+        void Print() {}
+}
+</code></pre>
+<p><code>要使用这些智能指针，首先应该包含memory头文件</code></p>
+<pre><code class="language-Cpp">#include&lt;memory&gt;
+
+//当我们想在特定的作用域使用unique_ptr指针
+
+int main()
+{
+    {
+
+        //下面是使用unique_ptr的一种方式
+        std::unique_ptr&lt;Entity&gt; entity(new Entity());//只能显示调用函数不能用 std::unique_ptr&lt;Entity&gt; entity  = new Entity();
+
+        entity-&gt;Print();
+
+        //另一种更好的方法
+        std::unique_ptr&lt;Entity&gt; entity  = std::make_unique&lt;Entity&gt;();
+        //这对unique_ptr很重要，主要是因为异常安全
+        //这样你最终不会得到一个空指针，从而造成内存泄漏
+
+    }
+}
+</code></pre>
+<p>但问题是如果你想分享这个指针，使得这个指针可以被传递到一个函数中，或者一个类中就会遇到问题，因为你不能复制它，这时可以使用shared_ptr</p>
+<h3 id="shared_ptr">shared_ptr</h3>
+<p>shared_ptr实现的方式实际上取决于编译器和你在编译器中使用的标准库<br>
+shared_ptr的工作方式是通过引用计数，可以跟踪你的指针有多少个引用，一旦引用计数达到零，它就被删除了</p>
+<p>例如我创建了一个共享指针shared_ptr，创建了另一个shared_ptr来复制它，此时引用计数就是2，当第一个被销毁，引用计数器就变为1，当最后一个被销毁，引用计数回到零，这块内存就被释放了</p>
+<pre><code class="language-Cpp">std::shared_ptr&lt;Entity&gt; sharedEntity = std::make_shared&lt;Entity&gt;()
+
+</code></pre>
+<p>不要用下面的方法<br>
+<code>std::shared_ptr&lt;Entity&gt; sharedEntity(new Entity())</code><br>
+在unique_ptr中，不直接使用new是因为异常安全，但在shared_ptr中有所不同，因为shared_ptr需要分配另一块内存，叫做控制块，用来存储引用计数，如果你首先创建一个new Entity,然后将其传递给shared_ptr构造函数，它必须做两次内存分配。先做一次new Entity的分配,然后是shared_ptr的控制内存块的分配<br>
+然而如果你用make_shared你能把他们组合起来，这样会更有效率</p>
+<p>最后，还有一个东西可以和shared_ptr一起使用，叫做weak_ptr</p>
+<p>可以像其他东西一样声明</p>
+<p><code>std::weak_ptr&lt;Entity&gt;</code> weakEmtity = sharedEntity;</p>
+<p>这里所做的和之前复制sharedEntity所做的一样，但之前会增加引用计数，<strong>但这里不会</strong><br>
+如果你不想要Entity的所有权，例如可能在排序一个Entity列表，你不关心他们是否有效，你只需要储存他们的一个引用就可以了</p>
+<p>简单来说，如果底层对象还存在，你可以做任何事情，但他不会让底层对象保持存活，因为它实际上不会增加引用计数</p>
+<p>至于什么时候应该使用它们，应该一直试着使用它们，它们会使内存管理自动化。会防止因为忘记调用delete而意外的泄漏内存</p>
+<h2 id="cpp的复制与拷贝构造函数">Cpp的复制与拷贝构造函数</h2>
+<p>拷贝复制是非常有用的东西，可以让程序按照我们想要的方式工作，但另一方面，不必要的复制会浪费性能。所以需要理解复制是如何在C++中工作的，如何让它工作，以及如何避免它工作，或者在不想复制的时候避免复制。对于理解语言以及能够高效正确的编写C++代码非常重要。下面通过写字符串类来演示。</p>
+<p>。。。。。。。。。。。。。。。。。<br>
+。。。。。。。。。。。。。。。。。<br>
+。。。。。。。。。。。。。。。。。</p>
+<h2 id="cpp的箭头操作符">Cpp的箭头操作符</h2>
+<p>首先假设有一个Entity类，内有print函数如果正常创建这个对象:<code>Entity e</code>,<code>e.Print()</code><br>
+但如果这个Entity对象实际上是一个指针的话</p>
+<p><code>Entity* ptr = &amp;e</code>此时为了调用print函数据不能使用<code>e.print()</code>因为这只是一个指针，也就是一个数值（不是对象，不能调用方法）。我们就需要用逆向引用(*ptr)</p>
+<p><code>Entity&amp; entity = *ptr</code>然后使用<code>entity.Print()</code>，当然也可以使用指针的逆向引用<code>(*ptr).Print()</code>，不能去掉括号，因为由于运算优先级，会先尝试调用Print，然后再逆向引用Print之后的结果</p>
+<p>但上面的操作看起来有些笨重，所以我们能做的是使用箭头操作符:<code>ptr-&gt;Print()</code>这实际上就相当于逆向引用了Entity指针</p>
+<p>这就是箭头操作符的是使用方式</p>
+<p>然而，作为一个操作符，C++可以重载它，并在你自己定义的类中使用它，使用下面的例子来说明为什么要这么做以及怎么做</p>
+<p>写一个智能指针的类</p>
+<pre><code class="language-C++">class ScopePtr
+{
+private:
+    Entity* m_Obj;
+public:
+    ScopedPtr(Entity* entity)
+        : m_Obj(entity)
+    {
+
+    }
+
+    ~ScopedPtr()
+    {
+        delete m_Obj;
+    }
+}
+
+//我们可以这样使用它
+
+int main()
+{
+    ScopedPtr eneity = new Entity();
+
+}
+
+</code></pre>
+<p>这里如果需要通过ScopedPtr调用Entity内的print函数，就需要用一个类似<code>GetObject()</code>的返回一个指针的函数，如果需要直接用ScopedPtr指针调用print，则需要对箭头操作符进行重载</p>
+<pre><code class="language-C++">Entity* operate-&gt;()
+{
+    return m_Obj;
+}
+
+const Entity* operate-&gt;()
+{
+    return m-Obj;
+}
+</code></pre>
+<p>然后就可以用这样的方法调用</p>
+<pre><code class="language-C++">int main()
+{
+    const ScopedPtr entity = new Entity;
+    entity-&gt;Print();
+
+    std::cin.get();
+}
+</code></pre>
+<p>可以使用箭头操作符来获取内存中某个成员变量的偏移量<br>
+有一个结构体</p>
+<pre><code class="language-C++">struct Vector3
+{
+    flaoat x,y,z;
+}
+</code></pre>
+<p>有三个浮点数分量float x,y,z<br>
+所以其中x的偏移量是0，因为其在结构体的第一项，y是4，z是8<br>
+如果将其的顺序移动为<code>float x,z,y</code>，在类中他们的工作方式是一样的，但他们在内存中会有不同的布局</p>
+<p>我们想写一些东西，来告诉我们这些成员的偏移量，就可以用箭头运算符来做这样的事情</p>
+<pre><code class="language-C++">//先写一个0，然后将它转换成一个Vector3指针,然后用箭头来访问x
+&amp;((Vector3*)0) -&gt; x
+</code></pre>
+<p>要做的就是取这个x的内存地址然后得到这个X的偏移量，因为从0开始，所以亦可以写为<code>&amp;((Vector3*)nullptr) -&gt; x</code></p>
+<p>让后将其转换为int类型，然后可将其输出</p>
+<pre><code class="language-C++">int offset = (int)&amp;((Vector3*)nullptr) -&gt; x;
+
+std::cin.get();
+</code></pre>
+<p>这里使用了箭头运算符来获取内存中某个值的偏移量。当你把主句序列化为一串字节流时，当你想要计算某些东西的偏移量时，我们会用到这种代码。</p>
+<h2 id="cpp动态数组stdvector">Cpp动态数组(std::vector)</h2>
+<p>Vector在初始化时无需指定大小，当超过初始化的大小时，它会在内存中创建一个比第一个大的新数组，把所有东西都复制到这里，然后删除旧的那个。</p>
+<p>现在我们来创建一个动态数组</p>
+<pre><code class="language-C++">//有一个vertex结构体
+struct Vertex
+{
+    float x,y,z;
+}
+
+//下面是输出运算符的重载，这样我们就能很容易地将其打印到控制台
+std::ostream&amp; operaor&lt;&lt;(std::ostream&amp; stream,const Vertex&amp; vertex)
+{
+    stream &lt;&lt; vertex.x &lt;&lt; &quot;,&quot; &lt;&lt; vertex.y &lt;&lt; &quot;,&quot; &lt;&lt; vertex.z;
+    return stream;
+}
+//如果我们想要一个静态数组，有两个选择，不考虑std::array的话，我们可以创建一个静态数组，其中可能有五个元素
+
+int main()
+{
+Vertex vertices[5]
+//我们需要绑定大小，即便你在堆上创建
+Vertex* vertices = new Vertex[5];
+}
+</code></pre>
+<p>但如果我们想持续输入数据，不在输入数量超过初始化数量时停止。我们需要一种方法，在此时重新调整容量。<br>
+这个问题的一个解决方案是，分配变态数量的vertex(<code>Vertex[5000000]</code>),但这当然是不理想的，这意味着会浪费很多内存。<br>
+所以我们可以用vector类来代替</p>
+<pre><code class="language-C++">std::vector&lt;Vertex&gt; vertices;
+//与Java不同的是，此处的类型可以传递基本类型，例如int
+
+</code></pre>
+<p>此处储存的元素的类型为<code>Vertex</code>而不是<code>Vertex*</code>，实际上只是把vertex对象储存在一条直线（一段内存）上，这两者有很大区别。具体使用视情况而定。<br>
+<strong>而主要考虑的是，储存vertex对象比储存指针在技术上更优</strong>，因为如果是Vertex对象，内存分配将是一条线上的。如果你像这样将vertex对象储存在一条直线上，他们都在同一条高速缓存线上。</p>
+<p>唯一的问题是，如果要调整vector的大小，它需要复制所有的数据。如果你有一个字符串的vector，并且需要调整它的大小，它确实需要重新分配和复制所有的东西，这可能是一个非常缓慢的操作。</p>
+<p>而指针不同，实际的内存保持不变，因为你只是正确的保存了指向内存的指针，所以实际的内存保持不变，到了调整大小的时候，它只实际数据的内存地址，而数据仍然被储存。在内存中的不同位置。</p>
+<pre><code class="language-C++">//向其中添加元素
+vertices.push_back({1,2,3});
+vertices.push_back({4,5,6});
+
+for(int i = 0;i &lt; vertices.size();i ++)
+{
+    std::cout &lt;&lt; vertices[i] &lt;&lt;std::endl;
+}
+
+//也可以使用基于range的for循环语句
+for(Vertex v : vertices)
+{
+    std::cout &lt;&lt; v &lt;&lt;std::endl;
+}
+//这实际上是将每个vertex复制到这个for范围循环中
+//但我们不想重复的复制，可以加上&amp;:  Vertex&amp; v :vertices
+
+
+//如果想清除vertex列表
+vertices.clear();//这会将其大小设为零
+
+//我们也可以单独移除某个vertex
+
+vertices.erase(vertices.begin() + 1)
+</code></pre>
+<p>另外，当你将vector传递给其他函数或类或其他东西时，需要确保是通过引用传递它们的，如果不会修改，就用const：<code>void Function(const std::vector&lt;Vertex)&amp; vertices</code><br>
+因为这样做可以确保没有把整个数组，复制到这个函数中。</p>
+<p>vector通常情况下是很慢的，某些情况下我们想尽力压榨出所有的性能，下面就是如何优化它。</p>
+<h2 id="cpp的stdvector使用优化">CPP的stdvector使用优化</h2>
+<p>优化vector的使用，应该先知道vector是如何工作的，以及如何改变它使之更好地工作。</p>
+<p>当你创建一个vector，然后开始push_back元素，如果vector的容量不够大，不能容纳新的元素。需要做的是，vector需要分配新的内存，至少足够容纳这些想要新加入的元素，当前的vector的内容，从内存中的旧位置复制到内存中的新位置，然后删除旧位置的内存。That`s what happents.</p>
+<p>这就是将代码拖慢的原因。我们需要不断地重新分配这是一个缓慢的动作。这就是需要避免的，这就是我们对于复制到优化策略。</p>
+<p>如何避免复制的对象，如果我们处理的是vector，特别是基于vector的对象（储存的不是vector指针<br>
+首先我们需要知道，复制是什么时候发生的，为什么会发生。</p>
+<pre><code class="language-C++">//首先我们有这个顶点类
+struct Vertex
+{
+    float x,y,z;
+
+    Vertex(float x,float y,float z)
+        :x(x),y(y),z(z)
+        {
+        }
+}
+
+int main()
+{
+    std::vector&lt;Vertex&gt; vertices;
+    vertices.push_back({1,2,3});
+    vertices.push_back({4,5,6});
+
+    std::cin.get();
+}
+
+//我们需要知道幕后发生了什么，确定实际发生了多少次复制
+
+//一个很好的方法是给vertex类添加一个拷贝构造函数，可能是在那里放一个断点，或者只是在控制台打印一些东西，看看拷贝构造函数什么时候被调用了
+
+//在Vertex类中写一个拷贝构造函数
+
+struct Vertex
+{
+    ······
+    ······
+
+    Vertex(const Vertex&amp; vertex)
+        : x(vertex.x),y(vertex.y),z(vertex.z)
+    {
+        std:;cout &lt;&lt; &quot;Copied!&quot; &lt;&lt; std:endl;
+    }
+};
+</code></pre>
+<p>运行代码，我们会得到</p>
+<pre><code class="language-C++">Copied!
+Copied!
+Copied!
+</code></pre>
+<p>如果用下面的方法</p>
+<pre><code class="language-C++">std::vector&lt;Vertex&gt; vertices;
+    vertices.push_back(Vertex(1,2,3));
+    vertices.push_back(Vertex(4,5,6));
+    vertices.push_back(Vertex(7,8,9));
+
+    std::cin.get();
+</code></pre>
+<p>会得到</p>
+<pre><code class="language-C++">Copied!
+Copied!
+Copied!
+Copied!
+Copied!
+Copied!
+</code></pre>
+<p>有了六次复制。为什么什么会这样，如果我们在第一次push_back处设置断点，当运行到此处会看见输出了一个Copied！<br>
+当我们创建vertex时，我们实际上是在主函数的当前栈帧中构造它，所以我们在main的栈上创建它。然后我们需要做的是，把它放到这个vector中，所以我们需要把这个创建的vertex从main函数放到实际的vector分配的内存中，即把它从main函数复制到vector类中。<br>
+<strong>这便是我们可以优化的第一件事，我们可以在适当的位置构造那个vertex（在vector的内存中）</strong></p>
+<p>设置断点，当我们执行到第二个push_back操作，会看到打印了三个Copied!,我们知道其中一个是什么时候产生的。是在main函数内部构造这个vertex对象然后将其放入到vector vertices中时产生的复制。<br>
+但为什么还会有另外一个？<br>
+通过编译器我们可以查看此时vertices的实际大小为2,这意味着在物理上有足够的内存来储存两个顶点对象，当我们再push一个，容量会变为3，这样才能有足够的内存放下第三个顶点。我们的vector在这里调整了2次大小，默认情况下大小是1，当不断添加元素，它会变大。这样看上面的六个copied分别来源于第一、二、三次的创建时的复制和调整大小时的1+2次将元素放入更大的新空间的复制。<br>
+<strong>如果我们知道计划放进三个vertex对象，为什么不直接让编译器制造足够的3个对象的内存，这样就不必调整两次大小了。这就是第二种优化策略。</strong></p>
+<p>例如在这里，我们希望容量是3，我们让vector容量为3的方法是设置<code>vertices.reserve(3)</code>，这与调整大小(resize)，或在构造函数中传入3是不同的。如果我们尝试再构造函数中传入3，这段代码将无法编译。因为这不仅仅是分配足够的内存，来储存三个vertex对象,它实际上会构造三个vertex对象。而我们并不需要这样做，我们只需要有足够的内存来容纳它们。</p>
+<pre><code class="language-C++">std::vector&lt;Vertex&gt; vertices;
+    vertices.reserve(3);
+    vertices.push_back(Vertex(1,2,3));
+    vertices.push_back(Vertex(4,5,6));
+    vertices.push_back(Vertex(7,8,9));
+
+    std::cin.get();
+</code></pre>
+<p>这样就将只会复制三次，我们节省了很多的copy。<br>
+但仍可以做得更好，因为这些vertex是在main函数中构造的，然后复制到实际的vector中。<br>
+我们可以再实际的vector中构造，使用emplace_back,而不是push_back，此时不再是传递我们已经构建的vertex对象，而只是传递构造函数的参数列表</p>
+<pre><code class="language-C++">vertices.emplace_back(1,2,3);
+vertices.emplace_back(4,5,6);
+vertices.emplace_back(7,8,9);
+</code></pre>
+<p>这样一来将不会发生复制。这样的代码会比我们最初的代码运行快得多。</p>
+<h2 id="c中使用库静态链接">C++中使用库（静态链接）</h2>
+<p>这里我们将以二进制文件形式进行链接，而不是获取实际依赖库的源代码并自己进行编译<br>
+这里讨论处理二进制GLFW库</p>
+<p>在官网获取了二进制的GLFW库文件<br>
+<img src="https://bu.dusays.com/2023/11/09/654c85689379e.png" alt="GLFW" loading="lazy"></p>
+<p>这是一种典型的文件布局。库通常包含两部分，include和library，包含目录和库目录<br>
+包含目录是一对堆头文件<br>
+include目录是一堆我们需要使用的头文件，这样我们就可以实际使用预构建的二进制文件中的函数<br>
+然后lib目录有那些预先构建的二进制文件，这里通常有两部分，动态库和静态库。但不是所有的的库都提供了这两种库。</p>
+<p>静态库意味着这个库会被放到你的可执行文件中，它在你的exe文件中或者其他操作系统下的可执行文件。<br>
+而动态链接库是在运行时被链接的，所以你仍有一些链接，你可以选择在程序运行时，装载动态链接库。</p>
+<p>你可以在WindowsAPI中使用一个叫做loadLibrary的函数作为例子，它会载入你的动态库，可以从中拉出函数，然后开始调用函数。<br>
+你也可以在应用程序启动时加载你的dll文件，这就是动态链接库。</p>
+<p>简单来说，主要的区别就是，库文件是否被编译到exe文件中或链接到exe文件中，还是只是一个单独的文件，在运行时，你需要把它放在你的exe文件旁边的某个地方，然后你的exe文件可以加载它。</p>
+<p>静态链接在技术上更快，因为编译器实际上可以执行链接时优化之类的。所以通常静态链接是最好的选择。<br>
+。。。。。。。。。。。。。。。。。。。<br>
+。。。。。。。。。。。。。。。。。。。<br>
+。。。。。。。。。。。。。。。。。。。</p>
+<h2 id="cpp中使用动态库">Cpp中使用动态库</h2>
+<h2 id="cpp中创建与使用库">Cpp中创建与使用库</h2>
+<h2 id="cpp中如何处理多返回值">Cpp中如何处理多返回值</h2>
+<p>当我们有一个函数，这个函数需要返回两个字符串。返回两种类型，有很多不同的方法可以实现。很显然再C++默认的情况下，不能返回两种类型。</p>
+<h2 id="cpp基准测试">Cpp基准测试</h2>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://Fzztrn8.github.io/post/c-ii/">
+              <h3 class="post-title">
+                下一篇：C++ Ⅱ
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">温故而知新</div>
+  <div class="social-container">
+    
+      
+        <a href="https://github.com/Fzztrn8" target="_blank">
+          <i class="fab fa-github"></i>
+        </a>
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://Fzztrn8.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

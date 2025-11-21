@@ -1,0 +1,537 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>C++ Ⅰ | Fzztrn8</title>
+<meta name="description" content="温故而知新">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://Fzztrn8.github.io/favicon.ico?v=1763720907022">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://Fzztrn8.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://Fzztrn8.github.io">
+        <img class="avatar" src="https://Fzztrn8.github.io/images/avatar.png?v=1763720907022" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://Fzztrn8.github.io">
+        <h1 class="site-title">Fzztrn8</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+            <div class="feature-container" style="background-image: url('https://s2.loli.net/2025/11/21/CfUsEAlxjWevdpT.png')">
+            </div>
+          
+          <h2 class="post-title">C++ Ⅰ</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2025-07-04</span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <h1 id="一"><strong>一</strong></h1>
+<p>[指针]<br>
+<a href="#2%E5%BC%95%E7%94%A8">引用</a></p>
+<p><a href="#3c%E7%B1%BBclass">C++类</a></p>
+<p><a href="#4c%E4%B8%AD%E7%9A%84static%E9%9D%99%E6%80%81">C++中的静态</a></p>
+<p><a href="#5c%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E9%9D%99%E6%80%81local-static">C++中的局部静态</a></p>
+<p><a href="#6c%E6%9E%9A%E4%B8%BEenum">C++枚举(enum)</a></p>
+<p><a href="#7%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0">构造函数</a></p>
+<p><a href="#8%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0">析构函数</a></p>
+<p><a href="#9c%E7%BB%A7%E6%89%BF">C++继承</a></p>
+<p><a href="#10%E8%99%9A%E5%87%BD%E6%95%B0">虚函数</a></p>
+<p><a href="#11%E6%8E%A5%E5%8F%A3%E7%BA%AF%E8%99%9A%E5%87%BD%E6%95%B0">接口</a></p>
+<p><a href="#%E5%8F%AF%E8%A7%81%E6%80%A7">可见性</a></p>
+<hr>
+<h2 id="1指针">1.指针</h2>
+<p>内容在C中已经熟悉</p>
+<ul>
+<li>指针本身为一个代表地址的整数</li>
+<li>指针的<code>*</code>运算符通常被称为dereference运算符，可逆引用指针。</li>
+</ul>
+<h2 id="2引用">2.引用</h2>
+<p>引用必须引用已经存在的变量，其本身不是变量也不占用内存，相当于变量的别名</p>
+<p>使用 <code>int&amp;</code> 类此的形式声明引用变量</p>
+<p>其作用为向函数传递变量，而不是只传递值，这使得函数可以直接对变量进行操作。可以达到与使用指针相似的效果，但比使用直至简单。</p>
+<p>例如用指针实现</p>
+<pre><code class="language-C++">#include&lt;iostream&gt;
+void Increment(int* value)
+{
+    (*value)++;
+}
+int main(){
+    int a = 5;
+    Increment(&amp;a);
+    std::cout&lt;&lt;a&lt;&lt;std::endl;
+    std::cin.get();
+}
+</code></pre>
+<p>引用实现</p>
+<pre><code class="language-C++">#include&lt;iostream&gt;
+void Increment(int&amp; value)
+{
+    value++;
+}
+int main(){
+    int a = 5;
+    Increment(a);
+    std::cout&lt;&lt;a&lt;&lt;std::endl;
+    std::cin.get();
+}
+</code></pre>
+<ul>
+<li>声明一个引用时必须对其赋值且引用的内容不可改变</li>
+</ul>
+<hr>
+<h2 id="3c类class">3.C++类（class)</h2>
+<p>类是对数据和功能组合在一起的一种方法。例如角色在游戏中的位置，角色可能拥有的某些属性等。直接创建这些内容会十分麻烦和混乱。</p>
+<p>通过使用类可以简化这些操作，我们可以创建一个叫做Player的类，它包含了所有的数据，当然，类中也可以包含函数，被称为<code>方法</code></p>
+<p>由类类型构成的变量成为对象，新的对象变量称为实例</p>
+<blockquote>
+<p>默认情况下，一个类中所有的东西都是私有的，这意味着只有类中的函数才能访问这些变量。我们希望从main函数中访问这些变量，需要将其设置为public</p>
+</blockquote>
+<pre><code class="language-C++">class Player
+{
+public:
+    int x,y;
+    int speed;
+
+    void Move(int xa, int ya)
+    {
+        //此处的X,Y，speed指的都是当前对象的变量
+       x += xa * speed;
+       y += ya * speed; 
+    }
+
+};
+
+int main()
+{
+    Player player;//实例化了一个Player对象
+    player.move(1,-1);//player对象内的函数
+    std::cin.get();
+
+}
+</code></pre>
+<p>总的来说，类允许我们将变量分组到一个类型中，并为这些变量添加功能</p>
+<p>类可以让代码变得简洁，使其容易维护。但是不用类搞不定的事情，用类也一样搞不定。类没有提供任何新功能</p>
+<ul>
+<li>结构体和类的对比</li>
+</ul>
+<blockquote>
+<p>默认情况下，类是<code>private</code>的，而结构体是<code>public</code>的。</p>
+</blockquote>
+<p><strong>如何写一个类：</strong></p>
+<p>///</p>
+<pre><code class="language-c++">class Log
+{
+public:
+const int LogLevelError = 0;
+const int LogLevelWaring = 1;
+const int LogLevelInfo = 2;
+private:
+int m_LogLevel = LogLevelInfo;
+public:
+void SetLevel(int level)
+{
+    m_messahe = level;
+}
+void Warn(const char* mess){
+     if (m_LogLevel &gt;= LogLevelWarn)
+    std::cout &lt;&lt; &quot;[WARING]:&quot;&lt;&lt; message &lt;&lt;std::endl
+}
+
+void Error(const char* mess){
+    if (m_LogLevel &gt;= LogLevelRrror)
+    std::cout &lt;&lt; &quot;[ERROR]:&quot;&lt;&lt; message &lt;&lt;std::endl
+}
+
+void Info(const char* mess){
+     if (m_LogLevel &gt;= LogLevelInfo)
+    std::cout &lt;&lt; &quot;[INFO]:&quot;&lt;&lt; message &lt;&lt;std::endl
+}
+
+};
+ int main(){
+    Log log;
+    log.Setlevel(log.LogLevelWaring);
+    log.Warn(&quot;Hello&quot;)
+    std::cin.get();
+ }
+
+</code></pre>
+<hr>
+<h2 id="4c中的static静态"><strong>4.C++中的static(静态)</strong></h2>
+<p>static有两种意思，这取决于上下文。</p>
+<p>其中之一是在类或结构体外部使用static关键字，另一种是在类或结构体内部使用ststic</p>
+<p>类外面的static,意味着你声明为static的符号，链接将只是在内部，<code>这意味着它只能对你定义它的翻译单元可见</code></p>
+<p>然而，类或结构体内部的静态变量(static)意味着该变量实际上将与类的所有实例共享内存，这意味着该静态变量在你创建的所有实例中，静态变量只有一个实例，类似的事情也适用于类中的静态方法。在类中，没有实例会传递给该方法。</p>
+<p>在这里先讨论<em>类或结构体外的静态</em></p>
+<pre><code class="language-C++">static int s_Variable = 5;
+</code></pre>
+<p>例如此处，静态<code>变量或函数</code>意味着，当需要将这些函数或变量与实际定义的符号链接时，链接器不会再这个翻译单元的作用域之外，寻找那个符号定义</p>
+<p>下面是<em>类或结构体中的静态（static)</em></p>
+<p>在几乎所有面向对象的语言中，静态在一个类中意味着特定的东西，如果把它和变量一起使用，这意味着在类的所有实例中，这个变量只有一个实例</p>
+<blockquote>
+<p>如果我创建一个名为Entity的类，我不断创建ENtity实例，<em>我仍然只会得到那个变量的一个版本</em>。意思是，如果某个实例改变了这个静态变量他会在所有实例中反映这个变化。因此，通过类实例来引用静态变量是没有意义的。因为这就像类的全局实例。静态方法也是一样，无法访问类的实例。静态方法可以被调用，不需要通过类的实例。<code>而在静态方法内部，你不能写引用到实例的代码</code>，因为你不能引用到类的实例</p>
+</blockquote>
+<h2 id="5c中的局部静态local-static"><strong>5.C++中的局部静态(local static)</strong></h2>
+<p>这是在一个局部的作用域。你可以在局部的作用域中使用static来声明一个变量。</p>
+<p>声明一个变量，我们需要考虑两种情况，这就是变量的生存期和作用域。</p>
+<blockquote>
+<p>生存期指的是变量的实际存在时间<br>
+变量的作用域是指我们可以访问变量的范围<br>
+如果在函数的内部声明一个变量，我们不能在其他的函数中访问它。</p>
+</blockquote>
+<p>静态局部(local static)变量允许我们声明一个变量，<code>他的生存期基本上相当于整个程序的生存期</code>，然而它的作用范围被限制在这个函数内，但他和函数没有什么关系。（你可以在任何作用域中生命这个）</p>
+<h2 id="6c枚举enum"><strong>6.C++枚举(enum)</strong></h2>
+<p>枚举是给一个值命名的一种方法，所以我们不用一堆叫做a、b、c的整数，我们可以有一个枚举数，它的值是a,b,c与整数相对应</p>
+<p>他还能帮助我们，将一组数值集合作为类型，而不仅仅是用整型作为类型</p>
+<p>例：</p>
+<pre><code class="language-C++">enum Example : unsigned char//冒号及其后内容可选，表示是数据类型，但必须为整数，例如可为char
+{
+    A,B,C//若不赋值，将从0开始递增
+}
+int main()
+{
+    Example value = B;//此处Example类型变量的值只能为A、B、C中的一种
+    if(value == 1)
+    {
+        //Do something here
+    }
+    std::cin.get();
+
+
+}
+
+</code></pre>
+<p>在3.内容中的如何写一个类可以用枚举来修改：</p>
+<pre><code class="language-C++">class Log{
+    public:
+    enum Level{
+        Error,Warning,Info
+    }
+}
+</code></pre>
+<p>显然会让代码变得简介<br>
+同时如果枚举类型变量在赋值时被赋予了枚举以外的内容，编译器将会提醒</p>
+<h2 id="7构造函数"><strong>7.构造函数</strong></h2>
+<blockquote>
+<p>（此处的构造不是动词）</p>
+</blockquote>
+<p>构造函数基本上是一种特殊类型的方法，<code>它在每次实例化对象时运行</code>主要的作用是初始化该类</p>
+<p>eg:假设我们想要创建一个Entity类</p>
+<pre><code class="language-c++">class Entity
+{
+    public:
+    float X,Y;
+    void Init(){
+        X = 0.0f;
+        Y = 0.0f;
+    }
+    void Printf(){
+        std::cout &lt;&lt; X &lt;&lt;&quot;,&quot;&lt;&lt;Y&lt;&lt;std::endl;
+    }
+}
+int main(){
+    Entity e;
+    e.Printf();
+    std::cin.get();
+}
+</code></pre>
+<p>这样的话，每次新实例化一个变量就要用Init方法初始化一遍，很繁琐</p>
+<p>而构造函数是一种每次你构造一个对象都会调用的方法，像定义其他方法一样定义它，但它没有返回类型，并且它的名称必须与类的名称相同</p>
+<pre><code class="language-C">Entity (){
+    X = 0.0f;
+    Y = 0.0f;
+}
+</code></pre>
+<p>如果不指定构造函数，仍然会有一个叫做默认构造函数的东西，只不过什么都都不做</p>
+<h3 id="带参数的构造函数">带参数的构造函数</h3>
+<p>其实可以写很多的构造函数，前提是他们由不同的参数，和写一些同名函数是一样的*（函数重载）</p>
+<blockquote>
+<p>函数重载：即有相同的函数（方法）名，但是有不同的参数的不同版本</p>
+</blockquote>
+<pre><code class="language-c++">Entity(float x,float y){
+    X = x;
+    Y = y;
+}
+</code></pre>
+<p>可以使用下面的方法传入参数</p>
+<pre><code class="language-C++">Entity e(10.0f,5.0f);
+</code></pre>
+<p>构造函数，如果不实例化对象，将不会运行，所以如果只使用一个类的静态方法，它不会运行</p>
+<blockquote>
+<p>静态成员是类级别的,也就是它和类的地位等同,而普通成员是对象(实例)级别的.类级别的成员,应先于该类任何对象的存在而存在,所以类的静态成员会被该类所有的对象共享,因此不能在静态方法里面访问非静态元素但非静态方法可以访问类的静态成员及非静态成员</p>
+</blockquote>
+<p>也有一些方法可以删除构造函数，例如下面的例子中，只想让人们用Log::Write()使用Log类，不希望创建实例</p>
+<p>有两种方法</p>
+<ul>
+<li>通过设置为private来隐藏构造函数（默认构造函数）</li>
+<li>删除构造函数如<code>Log() = delete;</code></li>
+</ul>
+<pre><code class="language-c++">class Log{
+public:
+    static void Write(){
+
+    }
+}
+
+int main(){
+    //
+}
+</code></pre>
+<h2 id="8析构函数"><strong>8.析构函数</strong></h2>
+<p>析构函数与构造函数很相似，析构函数实在销毁对象时运行，任何时候，一个对象将被销毁时，析构函数将被调用它不会返回任何值，也不能带有任何参数</p>
+<p>构造函数通常是设置变量或者做任何你需要做的初始化，同样的，析构函数是你卸载变量等东西，并清理你使用过的内存(关闭文件)</p>
+<p>构析函数同时适用于栈和堆分配的对象，如果你使用new分配一个对象，当你调用delete时，构析函数会被调用。而如果只是一个栈对象，<code>当作用域结束时，栈对象将被删除，这时，析构函数也会被调用</code></p>
+<p>构析函数写为~，然后是类的名称</p>
+<pre><code class="language-c++">~Entity(){
+    //下面只是示例内容
+    std::count&lt;&lt;&quot;Destoryed Entity!&quot;&lt;&lt;std:endl;//销毁时打印对应内容
+
+
+}
+</code></pre>
+<p>析构函数也可以手动调用例如<code>e.~Entity();</code></p>
+<h2 id="9c继承"><strong>9.C++继承</strong></h2>
+<p>继承允许我们有一个相互关联的类的层次结构，即它允许我们有一个包含公共功能的基类，然后它允许我们从那个(基)类中分离出来，从最初的父类中创建子类</p>
+<p>这些类、继承等如此有用的原因是它可以帮助我们避免代码重复，我们可以把类之间所有的公共功能放在一个父类中，然后从基类(父类)创建(派生)一些类，稍微改变下功能，或者引入全新的功能</p>
+<p>看在代码中的应用</p>
+<pre><code class="language-c++">//假设有一个Entity类，他将管理游戏中所有实体对象
+class Entity{
+    //例如，每个实体在我们的游戏中都有自己的位置
+public:
+    float X,Y;
+    //赋予每个实体移动的能力
+    void Move(float xa, float ya) {
+        X += xa;
+        Y += ya;
+    }
+
+    //至此，创建了一个和积累Entity,在游戏中的每个实体都将具有这些特征
+}
+
+    //下面创建一个新的类Player
+
+    //我们可以扩展这个Entity实体类，来创建一个名为Player的新类型，然后让他储存新数据
+
+    class Player{
+public:
+    const char* Name;
+    float X,Y;
+
+    void Move(float xa, float ya) {
+        X += xa;
+        Y += ya;
+    }
+
+    void PrintName(){
+        std:&lt;&lt;Name&lt;&lt;std::endl;
+    }
+    }
+
+</code></pre>
+<p>现在把Player变成Entity的子类：在类型声明后写一个冒号，然后写public Entity</p>
+<pre><code class="language-C++">  class Player : public Entity
+</code></pre>
+<pre><code>Player类现在不仅拥有Player类型，而且它也有Entity类型
+
+Player现在拥有Entity拥有的所有东西。任何在Entity中```不是私有```的东西，都可以被Player访问，比如X和Y.所以可以把Player中重复的代码都去掉
+
+``` C++
+class Player : public Entity{
+    const char* Name;
+    void PrintName(){
+        std:&lt;&lt;Name&lt;&lt;std::endl;
+    }
+}
+</code></pre>
+<pre><code>可以有下面的用法
+
+``` C++
+    int main(){
+        Player player;
+        player.PrintfName();
+        player.Move(5,5);
+        player.X = 2;
+    }
+</code></pre>
+<p>其实我们可以应用到概念是叫做&quot;多态&quot;,多态是一个单一类型，但是有多个类型的意思.</p>
+<p>Player包含Emtity所有的东西再多一些，甚至可以不加这些多的东西，与Entity完全一样，但Player总是Entity的超集（父类是子类的子集）</p>
+<p>总的来说，继承是我们扩展现有类并为基类提供新功能的一种方式</p>
+<p>补充：C++有三种继承方法，public,protected,private</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">继承方式</th>
+<th style="text-align:center">基类的public成员</th>
+<th style="text-align:center">基类的protected成员</th>
+<th style="text-align:center">基类的private成员</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">public继承</td>
+<td style="text-align:center">仍为public成员</td>
+<td style="text-align:center">仍为protected成员</td>
+<td style="text-align:center">不可访问</td>
+</tr>
+<tr>
+<td style="text-align:center">protected继承</td>
+<td style="text-align:center">变为protected成员</td>
+<td style="text-align:center">变为protected成员</td>
+<td style="text-align:center">不可访问</td>
+</tr>
+<tr>
+<td style="text-align:center">private继承</td>
+<td style="text-align:center">变为private成员</td>
+<td style="text-align:center">变为private成员</td>
+<td style="text-align:center">不可访问</td>
+</tr>
+</tbody>
+</table>
+<h2 id="10虚函数"><strong>10.虚函数</strong></h2>
+<p>虚函数允许我们在子类中重写方法。假设我们有两个类A和B ,B是A派生出来的，即B是A的子类。如果我们在A中创建一个方法，标记为virtual,我们可以选择在B类中重写那个方法，让它做其他的事情</p>
+<h2 id="11接口纯虚函数"><strong>11.接口（纯虚函数）</strong></h2>
+<p>纯虚函数允许我们在基类中定义一个没有实现的函数，然后在派生类中实现它。这样，我们就可以在基类中使用这个函数，但是我们不知道它是如何实现的，这就是接口</p>
+<pre><code class="language-C++">virtual std::string GetName() = 0;
+
+</code></pre>
+<blockquote>
+<p>未掌握</p>
+</blockquote>
+<h2 id="可见性"><strong>可见性</strong></h2>
+<p>可见性指的是对于类的某些成员或方法，谁能看到他们，谁能调用他们，谁能使用它们。<br>
+可见性是对程序实际运行方式完全没有影响的东西，对程序性能或类似的东西也没有影响。</p>
+<p>C++中有三个基础的可见性修饰符private,protected,public</p>
+<p>在其他语言有其他的关键字</p>
+<h3 id="private"><strong>private</strong></h3>
+<p>private成员只能(*特殊：friends 友元)被类的成员函数访问，不能被类的外部访问，<code>也不能被派生类访问</code></p>
+<h3 id="protected"><strong>protected</strong></h3>
+<p>protected比private更可见,比public更不可见</p>
+<p>protected指的是这个类和其所有子类都可以访问</p>
+<h3 id="public"><strong>public</strong></h3>
+<p>意味着所有人都可以访问它，包括在main函数的内部</p>
+<hr>
+<p><code>关于可见性的作用</code><br>
+首先，public公开一切纯粹是一个糟糕的想法，对于开发者和写代码而言这是风格问题，是如何写好代码的问题。可见性让代码更加容易维护，容易理解，不管是阅读代码还是扩展代码，与性能无关</p>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://Fzztrn8.github.io/post/mysql/">
+              <h3 class="post-title">
+                下一篇：MySQL
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">温故而知新</div>
+  <div class="social-container">
+    
+      
+        <a href="https://github.com/Fzztrn8" target="_blank">
+          <i class="fab fa-github"></i>
+        </a>
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://Fzztrn8.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

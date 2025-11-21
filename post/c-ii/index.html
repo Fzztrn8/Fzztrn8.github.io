@@ -1,0 +1,566 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>C++ Ⅱ | Fzztrn8</title>
+<meta name="description" content="温故而知新">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://Fzztrn8.github.io/favicon.ico?v=1763720907022">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://Fzztrn8.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://Fzztrn8.github.io">
+        <img class="avatar" src="https://Fzztrn8.github.io/images/avatar.png?v=1763720907022" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://Fzztrn8.github.io">
+        <h1 class="site-title">Fzztrn8</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+            <div class="feature-container" style="background-image: url('https://s2.loli.net/2025/11/21/CfUsEAlxjWevdpT.png')">
+            </div>
+          
+          <h2 class="post-title">C++ Ⅱ</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2025-07-04</span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <h1 id="二"><strong>二</strong></h1>
+<p><a href="#c%E6%95%B0%E7%BB%84">C++数组</a></p>
+<p><a href="#14c%E5%AD%97%E7%AC%A6%E4%B8%B2">C++字符串</a></p>
+<p><a href="#c%E7%9A%84%E6%88%90%E5%91%98%E5%88%9D%E5%A7%8B%E5%8C%96%E5%88%97%E8%A1%A8">C++的初始化成员列表</a></p>
+<p><a href="#c%E4%B8%AD%E7%9A%84new%E5%85%B3%E9%94%AE%E5%AD%97">C++的new关键字</a></p>
+<p><a href="#c%E9%9A%90%E5%BC%8F%E8%BD%AC%E6%8D%A2%E4%B8%8Eexplicit%E5%85%B3%E9%94%AE%E5%AD%97">C++隐式转换与explicit关键字</a></p>
+<p><a href="#c%E8%BF%90%E7%AE%97%E7%AC%A6%E5%8F%8A%E5%85%B6%E9%87%8D%E8%BD%BD">C++运算符及其重载</a></p>
+<h2 id="c数组"><strong>C++数组</strong></h2>
+<p>Array</p>
+<p>可以在堆(heap)上创建一个数组</p>
+<pre><code class="language-C++">int* another = new int[5]; //其作用域与在栈上创建不同，直到程序把它销毁之前，它都是处于活动状态的，需要用delete关键字来删除
+
+delete[] another;
+
+</code></pre>
+<p>使用new动态分配最大的原因是生存期，用new来分配的内存，它将一直存在，直到手动删除它。如果你有一个函数返回一个数组，你必须使用一个new关键字来分配它，除非你传入一个数组的地址参数。在堆上创建数组，该数组指针所指的内容为一个地址，这个地址指向数组的第一个元素。所以，应该在栈上创建数组来避免这种情况，因为像这样在内存中跳跃肯定会影响性能</p>
+<p>另外，在栈上创建的数组可以用sizeof获得其大小，而在堆上创建的数组无法直接获得其大小，因为它只是一个地址，所以我们需要在创建数组时记录其大小</p>
+<pre><code class="language-C++">&gt; C++11中有内置数据结构std::array，相较于原始数组有很多优点，例如边界检查，记录数组大小
+
+``` C++
+
+#include&lt; array &gt;
+std::array&lt; int, 5 &gt; another;
+
+</code></pre>
+<h2 id="14c字符串"><strong>14.C++字符串</strong></h2>
+<p>字符串本质上是一个字符数组。</p>
+<pre><code class="language-C++">const char* name = &quot;Cherno&quot;;
+//char* name = &quot;Cherno&quot;这样的代码风格在C++11并没有被舍弃，但是不推荐使用。因为这样的代码会导致指针和字符串字面量类型不匹配的问题，可能会引发未定义行为。建议使用std::string或者const char来代替char。
+</code></pre>
+<p>在C++的标准库中有一个名为String的类，实际上有一个类叫BasicString，它是一个模板类，String是BasicString的一个特化版本，模板参数是char,它是一个字符数组的包装器，它提供了很多有用的方法，例如获取字符串长度，连接字符串，查找字符串，替换字符串等等</p>
+<p>std::string怎么工作？它只是一个char数组，有一个char数组和一些函数，用来操作这个数组，它的长度是可变的</p>
+<p>另一件常见的事是追加字符串，我们想做cherno + hello!不能写为</p>
+<pre><code class="language-C++">std::string name = &quot;Cherno&quot; + &quot;hello!&quot;;
+
+</code></pre>
+<p>发生这种情况的原因是 你实际上是想将两个const char的数组相加(双引号里的东西是const char数组，不是真正的字符串)，但是这是不可能的，这样实际上是两个指针相加。一个很简单的方法是把它分开成多行</p>
+<pre><code class="language-C++">name += &quot;hello!&quot;;
+
+</code></pre>
+<p>这样做是将一个指针，加到了name。name是一个是字符串，你把它加到一个字符串上，+=这个操作在string类被重载了，所以可以这样写。</p>
+<p>或者将两个相加的字符数组其中的一个，显式调用string的构造函数</p>
+<pre><code class="language-C++">std::string name = std::string(&quot;Cherno&quot;) + &quot;hello!&quot;;
+
+</code></pre>
+<p>相当于创建了一个字符串，然后附加这个字符数组给它</p>
+<h2 id="字符串字面量"><strong>字符串字面量</strong></h2>
+<p>双字符串字面量是在双引号之间的一串字符</p>
+<p>定义字符串时如果不使用const关键字而直接写类似<code>char* name = &quot;Cherno&quot;</code>这样的代码，这样的代码风格在C++11并没有被舍弃，但是<code>不推荐使用</code>。因为这样的代码会导致指针和字符串字面量类型不匹配的问题，可能会引发未定义行为。建议使用std::string或者const char来代替char。</p>
+<p>原因是，你在这里所做的是，你取了一个指向那个字符串字面量的内存位置的指针，而字符串字面量是储存在内存的只读部分的</p>
+<p>如果确实需要修改它，只需要将类型定义为一个数组，而不是指针</p>
+<pre><code class="language-C++">char name[] = &quot;Cherno&quot;;
+
+</code></pre>
+<p>除了char 还有一种类型叫做wchar_t,这就是宽字符。定义时需要在前加上大写L，表示下面的字符串字面值由宽字符组成<code>const wchar_t* name2 = L&quot;Cherno&quot;</code></p>
+<p>C++也引入了一些其他类型，比如<code>char16_t</code>,需要在前加上u。<code>char32_t</code>,加上大写的U</p>
+<pre><code class="language-C++">const char16_t* name3 = u&quot;Cherno&quot;;
+const char32_t* name4 = U&quot;Cherno&quot;;
+
+</code></pre>
+<p>基本上，char是一个字节的字符，char16是两个字节的16位的字符，char32是32位，4字节的字符分别对应utf8,utf16,utf32</p>
+<p>那么wchar和char16的区别是什么？因为他们似乎都是两个子节点字符</p>
+<p>虽然一直说每个字符是两个字节，然而这实际上是由编译器决定的，它可能是一个字节，也可能是两个字节，也可能是四个字节。在实际应用中，通常不是两个就是四个字节。在Windows上是2个字节，在Linux上是4个字节。所以这其实是一个变动的值。<br>
+如果你确实要的是2个字节的，就用char16_t。</p>
+<p>再讲讲两个字符串的事情。比如字符串附加。在C++14，有个std::string_literals 给出了一些方便的字符函数</p>
+<p>上文讲过，如果需要在一个字符串附加一些其他的字符串，不能使用</p>
+<pre><code class="language-C++">std::string name0 = &quot;Cherno&quot; + &quot;hello&quot;;
+
+</code></pre>
+<p>因为这些都是字符串字面量，他们实际上是数组或指针。之前的解决方案是用一个构造函数将其包围起来，使其成为一个string对象。然而，因为在C++14的string_literals库中有办法可以让事情变得简单一点。</p>
+<p>可以将s加到字符串的末尾。实际上这是一个函数。他是一个操作符函数，返回标准字符串（对象）</p>
+<p>我们还可以使用另一种方法来附加字符串字面量——字母R</p>
+<p>在字面量前写上R，这意味着忽略转义字符</p>
+<p>在实际应用中，如果我们要打印的东西是有很多行的字符串，可以直接像下面写</p>
+<pre><code class="language-C++">const char* example = R&quot;(Line1
+Line2
+Line3
+Line4)&quot;;
+
+</code></pre>
+<p>如果不这样，我们就需要用附加字符串的方法或下面的方法</p>
+<pre><code class="language-C++">const char* ex = &quot;Line1\n&quot;
+    &quot;Line2\n&quot;
+    &quot;Line3\n&quot;;
+
+</code></pre>
+<p>最后，关于字符串字面量的内存以及其如何工作</p>
+<p>字符串字面量<code>永远</code>保存在内存的只读区域(略)</p>
+<h2 id="c中的const"><strong>C++中的const</strong></h2>
+<p>const在改变生成代码方面做不了什么，它有点像类和结构体的可见性，这是一个机制，让代码更加干净，并对开发人员写代码强制特定的规则。const像是你做出的承诺，他承诺某些东西将是不变的。然而，它只是一个你可以绕过的承诺。我们使用const的原因是这个承诺可以简化很多代码</p>
+<p>const除了可以声明一个常量，还有其他几种用法</p>
+<p>首先是指针，通常对于一个指针，我们可以修改其指向的内容和其地址</p>
+<p>但使用了const（将const放在int*前）后，将无法修改指针指向的内容，但仍可以修改指针的指向（即地址）</p>
+<pre><code class="language-C++">const int* a  =new int;
+
+</code></pre>
+<p>使用const的第二种方式是将它放在*之后</p>
+<pre><code class="language-C++">int* const a = new int;
+
+</code></pre>
+<p>它的作用恰好相反，我们可以改变指针的指向，但无法把实际的指针本身重新赋值，指向别的东西</p>
+<p>注意,下面两种写法的作用是相同的</p>
+<pre><code class="language-C++">int const* a = new int;
+const int* a = new int;
+
+</code></pre>
+<p>当然，可以写两个const,这样既不能改变指针指向的内容，也不能改变指针本身</p>
+<pre><code class="language-C++">const int* const a = new int;
+
+</code></pre>
+<h2 id="在类中以及方法中使用const"><strong>在类中以及方法中使用const</strong></h2>
+<pre><code class="language-C++">class Entity
+{
+    private:
+        int m_X, m_Y;
+    public:
+    int GetX() const
+    {
+        return m_X;
+    }
+};
+
+</code></pre>
+<p>在类中方法的参数列表后写上const，这就是const的第三种用法。这意味着这个方法不会修改任何实际的类（即这个方法只能读取数据），所以我们不能修改类成员变量。如果在GetX中尝试m_X = 2则会出错</p>
+<p>定义下面的函数</p>
+<pre><code class="language-C++">void PrintEntity(const Entity&amp; e)
+{
+    std::cout &lt;&lt; e.GetX() &lt;&lt; std::endl;
+}
+
+</code></pre>
+<p>如果去掉GetX后的const，将不能调用GetX，因为GetX函数已经不能保证它不会写入Entity了。在这里，e是作为const ENtity的引用的，所以不能将e重新赋值。（这与参数为const Entity*类似）</p>
+<p>正因如此有时你会看到函数的两个版本例如一个带有const一个不带</p>
+<pre><code class="language-C++">int Get() const
+{
+    return m_X;
+}
+
+int Get()
+{
+    return m_X;
+}
+
+</code></pre>
+<p>如果你确实想要将方法标记为const,但由于某些原因，又确实需要修改一些变量。在C++中有一个关键词<code>mutable</code> 这个词意味着它是可以被改变的</p>
+<pre><code class="language-C++">mutable int var;
+
+</code></pre>
+<p>这样即使在const方法中也可以对var作出修改</p>
+<h2 id="c中的mutable关键字"><strong>C++中的mutable关键字</strong></h2>
+<p>mutable有两种不同的用途，其中之一就是上文中的与const一起使用，另一种是用在lambda表达式中。</p>
+<h2 id="c的成员初始化列表"><strong>C++的成员初始化列表</strong></h2>
+<p>构造函数初始化列表。这是我们在构造函数中初始化类成员（变量）的一种方式。<br>
+当我们编写一个类并向该类添加成员时，通常需要用某种方法来初始化这些成员。在C++中，有两种方法可以做到这一点。第一种是在构造函数中初始化它们，第二种是使用成员初始化列表。这两种方法都可以做到这一点，但是成员初始化列表的效率更高，因为它可以避免不必要的构造函数调用。</p>
+<pre><code class="language-C++">class Entity
+{
+    private:
+        std::string m_Name;
+        int m_Score;
+    public:
+        Entity()
+            :m_Name(&quot;Unknown&quot;),m_Score(0) //成员初始化列表
+            {
+
+            }
+}
+    
+</code></pre>
+<p>要注意的是，在成员初始化列表中，<code>应该按照声明的顺序写</code>。因为不管你怎么写，都会按照声明的顺序初始化。如果你打破这个顺序，这就会导致各种各样的依赖性问题。</p>
+<p>我们为什么要使用这个？首先这会让代码看起来整洁，使构造函数干净易读。还有一个功能上的区别，在特定类的情况下，如果写如下的代码</p>
+<pre><code class="language-C++">class Entity
+{
+    private:
+        std::string m_Name;
+        int m_Score;
+    public:
+        Entity()
+            :m_Name(&quot;Unknown&quot;),m_Score(0) //成员初始化列表
+            {
+
+            }
+}
+    
+</code></pre>
+<h2 id="创建并初始化c对象"><strong>创建并初始化C++对象</strong></h2>
+<pre><code class="language-C++">Entity{
+    private:
+    String m_Name;
+    public:
+    Entity() : m_Name(&quot;Unknown&quot;){}; //构造函数 或Entity entity(&quot;Cherno&quot;)
+    Entity(const String&amp; name) : m_Name(name){}; //构造函数
+
+    cosnt String&amp; GetName() const {return m_Name;}
+}
+
+int main(){
+    Entity entity = Entity(&quot;Cherno&quot;); //创建并初始化对象
+    std::cout &lt;&lt; entity.GetName() &lt;&lt; std::endl;
+
+    std:cin.get();
+}
+
+</code></pre>
+<p>这就是通常做的在栈(stack)上初始化对象。如果能这样创建对象，就这样做，因为这是C++中最快的方法，也是可以管控的方法。</p>
+<p>某些情况下我们不能这样做</p>
+<p>你在一个函数中初始化了一个对象，它会被储存在栈中，当函数运行结束时他就会被销毁。（作用域不一定是函数，还可以是if语句甚至是只是夹在空的花括号中）</p>
+<p>如果你想把它放到这个函数生存期之外,就需要将其分配到堆(heap)上</p>
+<p>另一个不分配到栈的原因是，如果这个entity的规模太大，而且我们可能有太多的entity，我们可能没有足够的空间在栈上分配，因为栈通常非常小，通常是1 megabyte或2 megabyte，这取决于编译器和平台。</p>
+<p>下面看看堆分配</p>
+<p>如果想要将上面的entity分配到堆，首先要做的是改变类型，类型现在不是Entity而是Entity*。这里的最大的区别不是类型变成了指针，而是new关键字。</p>
+<pre><code class="language-C++">Entity* entity = new Entity(&quot;Cherno&quot;);
+e = &amp;entity;
+
+</code></pre>
+<p>当我们调用new Entity时，我们会在堆上分配内存，调用构造函数。这个new Entity实际上会返回一个Entity*，是这个entity在堆上被分配内存的地址（这也是Java和C#中代码的样子）</p>
+<p>当我们在C++做了上面的事情，我们需要负责释放这些内存</p>
+<pre><code class="language-C++">delete entity;
+
+</code></pre>
+<p>这就是创造对象的两种方法。如何选择？如果对象太大或者要显式地控制对象的生存期就用堆上创建</p>
+<h2 id="c中的new关键字"><strong>C++中的new关键字</strong></h2>
+<p>你在编写C++程序是，应该关心内存、性能和优化等问题。</p>
+<p>使用new的主要目的是在堆上分配内存。写上new + 数据类型 。它决定了必要的分配大小，以字节为单位。例如new int，我们需要找到一块包含四个字节的连续内存块。<br>
+一旦找到，就会返回一个指向这个地址的指针。当你调用new，将会消耗时间。虽然搜索内存并不是在内存中一个一个查找，而是有一种叫做空闲列表的东西，它会维护那些有空闲字节的地址。但这仍然很慢</p>
+<p>当用new来初始化对象，不仅会分配内存，还会调用构造函数。（实际上new是一个操作符，它的行为依赖于C++类库，这意味着你可以重载这个操作符，并改变它的行为）</p>
+<p>通常，调用new，会调用隐藏在里面的C函数malloc，它代表分配内存（传入size，返回指针）也就是说<code>Entity* e = new Entity()</code>相当于<code>Entity* e = malloc(sizeof(Entity))</code>这两种代码仅有的区别是第一个调用了构造函数而第二个只是分配了内存</p>
+<p>最后，记得delete(也是一个操作符，调用了C函数free，也调用了析构函数)</p>
+<p>注意，当我们使用new时使用了[]，例如<code>int* b = new int[50]</code>，则delete时需要用<code>delete[]</code></p>
+<blockquote>
+<p>placement new<br>
+placement new是一种特殊的new表达式，它可以在指定的内存地址上创建对象，而&gt; 不是从系统的堆中分配空间¹。它的语法形式是：</p>
+<p>new (placement-params) ( type ) initializer</p>
+<p>其中placement-params是提供给分配函数的额外参数，type是要创建的对象的类型，initializer是用来初始化对象的表达式。</p>
+<p>placement new的作用是可以利用已经分配好的内存空间，避免重复申请和释放内存，提高程序的效率和灵活性。它也可以用来在栈或堆上生成对象。</p>
+<p>使用placement new时，需要注意以下几点：</p>
+<ul>
+<li>placement new不会分配内存，所以必须保证指定的内存地址是有效的，并且有足够的空间容纳对象¹。</li>
+<li>placement new会调用对象的构造函数，但不会自动调用对象的析构函数，所以需要显式地调用析构函数来销毁对象。</li>
+<li>placement new不能被用户重载，只能使用标准库提供的版本。</li>
+</ul>
+</blockquote>
+<h2 id="c隐式转换与explicit关键字"><strong>C++隐式转换与explicit关键字</strong></h2>
+<p>隐含的意思是不会明确地告诉它要做什么，所以有点像automatic,通过上下文知道意思。C++允许编译器对代码执行一次隐式转换，如果我们开始有两个数据类型，在两者之间，c++允许隐式转换，而不需要用cast做强制转换</p>
+<pre><code class="language-C++">class Entity
+{
+    private:
+    std::string m_Name;
+    int m_Age;
+    public:
+    Entity(const std::string&amp; name)
+        : m_Name(name), m_Age(-1) {};
+    Entity(int age)
+        : m_Name(&quot;Unknown&quot;), m_Age(age) {};
+};
+
+</code></pre>
+<p>可以看到在上面的类中有两个构造函数，一个接受int类型参数，一个接受string类型参数。如果我们想要创建一个Entity对象，我们可以这样做</p>
+<pre><code class="language-C++">Entity a(&quot;Cherno&quot;);
+Entity b(22);
+
+</code></pre>
+<p>但是我们也可以直接将a赋值为Cherno，b赋值为22</p>
+<pre><code class="language-C++">Entity a = &quot;Cherno&quot;;
+Entity b = 22;
+
+</code></pre>
+<p>这称为隐式转换，它隐式的将22转换成一个Entity，构造出一个Entity。因为有一个Entity的构造函数，接受一个整数的参数，另一个接受字符串作为参数</p>
+<p>explicit关键字可以阻止隐式转换，只能用显式转换.explicit关键字放在构造函数的前面。此时如果要使用整数构造这个ENtity对象，则必须显式调用此构造函数</p>
+<h2 id="c运算符及其重载"><strong>C++运算符及其重载</strong></h2>
+<p>运算符是我们使用的一种符号，通常代替函数来执行一些事情。而重载本质是给运算符赋予新的功能或者添加参数等（运算符实际上是函数），允许在程序中定义或更改运算符的行为。这一特性在Java等语言中并不受支持。在C#被部分支持。</p>
+<p>总的来说，运算符重载的使用应该要非常少而且只是在完全有意义的情况下。例如，当定义一个math类，你需要把两个math对象加在一起，那么将'+'进行重载是很有意义的，因为这样做可以简化代码</p>
+<p>例:</p>
+<p>这里构造了一个Vector2,对其进行运算</p>
+<pre><code class="language-C++">struct Vector2
+{
+    float x, y;
+
+    Vector2(float x, float y)
+        :x(x),y(y) {}
+
+
+
+};
+
+int main()
+{
+    Vector2 position(4.0f,4.0f);
+    Vector2 speed(0.5f,1.5f);
+}
+
+//我们创造了两个向量，如果要将他们相加，可以在Vector2中写add(speed)来解决，这样就可以使用position.add
+
+    Vector2 Add(const Vector2&amp; other) const
+    {
+        return Vector2(x + other.x, y + other.y);
+    };
+
+//如果我们需要通过某种修改来改变speed,可能用powerup,是速度稍快一点，就要用到乘法，定义一个powerup,写Mulitoly（powerup）来实现
+Vector2 powerup(1.1f,1.1f);
+
+Vector2 Multiply(const Vector2&amp; other) const
+{
+    return Vector2(x * other.x,y * other,y);
+}
+
+//然后变化后的为
+
+Vector2 result = position.Add(speed.Multiply(powerup));
+
+std::cin.get();
+
+</code></pre>
+<p>在C++中，我们可以定义自己的运算符来处理vector2结构,所以可以不用写成这样。我们可以将其转化为数学运算符</p>
+<pre><code class="language-C++">//就只需要写成下面
+Vector2 result = position + speed * powerup;
+
+</code></pre>
+<p>下面是对于重载符的定义</p>
+<pre><code class="language-C++">//类型名后不加函数名而是operator+
+
+Vector2 operator+(const Vector2&amp; other) const
+{
+    return Add(other);
+}
+
+//这样就完成了对+的重构
+</code></pre>
+<p>因为他们和其他函数一样，我们也可以反过来做，不是operatpr+调用add函数,而是add函数调用operator+函数,虽然这并不常见</p>
+<p>just liek:</p>
+<pre><code class="language-C++">Vector2 operator+(const Vector2&amp; other) const
+{
+    return Vector2(x + other.x, y + other.y);
+}
+
+Vector2 Add(const Vector2&amp; other) const
+{
+     return *this + other;
+}
+</code></pre>
+<p>同理，对于*的重构</p>
+<pre><code class="language-C++">Vector2 operator*(const Vector2&amp; other) const
+{
+    return Multiply(other);
+}
+</code></pre>
+<p>另外，我们可以对std::out中的&quot;&lt;&lt;&quot;进行重载，然后就可以使用<code>std::cout &lt;&lt; result2 &lt;&lt;std::endl;</code></p>
+<p>这是一个在类外定义的运算重载符,所以我们仍然需要对一个现有流的引用，在这种情况下，就是<code>cout</code>。(std::ostream是我们需要重载的符号的最初定义)</p>
+<pre><code class="language-C++">std::ostream&amp; operator&lt;&lt;(std::ostream stream,const Vector2&amp; other)
+{
+    stream &lt;&lt; other.x &lt;&lt; &quot;,&quot; &lt; other.y;
+}
+
+</code></pre>
+<p>下面还有一个例子,对于==的重载</p>
+<pre><code class="language-C++">bool operator==(const Vector2&amp; other) const{
+    return x == other.x &amp;&amp; y == other.y;
+}
+
+bool operator!=(const Vector2&amp; other) const
+{
+    return !(*this == other);
+}
+
+if(result1 == result2){
+
+}
+</code></pre>
+<h2 id="cpp中的this关键字">Cpp中的this关键字</h2>
+<p>通过C++中的<code>this</code>关键字，可以访问成员函数(一个属于某个类的函数或方法)，在方法内部我们可以引用<code>this</code>. <code>this</code>是一个指向当前对象实例的指针，该方法属于这个对象实例。在cpp中我们可以写一个非静态方法，为了调用它，我们首先实例化一个对象，然后调用这个方法，这个方法必须用一个有效的对象来调用，关键字<code>this</code>是指向该对象的指针。</p>
+<pre><code class="language-C++">class Entity
+{
+public:
+    int x, y;
+
+//例如在下面的构造函数中，我们如果想要将参数的x,y赋值给类中的变量x，直接写x = x将是无效的，它的意思是将x赋值给其自身。而我们真正想做的是引用类中的x，y this关键字可以帮我们做到
+    Entity(int x, int y)
+    {
+        Entity* e = this;//实际上这就是this的类型
+
+        //此时我们想要赋值x，只需：e-&gt; x = x或this-&gt; x或(*this).x = x;
+        this-&gt; x = x;
+        this-&gt; y = y;
+    }
+        
+}
+
+</code></pre>
+<p>如果我们想要写一个返回这些变量之一的函数（不会修改这个类）</p>
+<pre><code class="language-C++">int  GetX() const
+{
+    return x;
+}
+
+</code></pre>
+<p>在这个函数中，不能将this通过<code>Entity* e = this</code>赋值,而是<code>const Entity* e = this</code>这样就能保证不会修改类</p>
+<p>另一个有用的场合是，如果我们想要在类的内部调用这个类之外的函数（外部函数），并且这个函数将entity作为参数，例如</p>
+<pre><code class="language-C++">//这是一个在类外部定义的函数
+
+void PrintEntity(Entity* e)
+{
+    //print
+}
+
+//当我们要在类的内部调用这个函数，传递这个Entity类的当前实例到这个函数
+
+PrintEntity(this);
+
+</code></pre>
+<p>如果想把它作为一个常量引用 const &amp;</p>
+<pre><code class="language-C++">void PrintEntity(const Entity&amp; e)
+{
+    ....
+}
+</code></pre>
+<p>要做的就只是逆向引用<br>
+<code>PrintEntity(*this)</code></p>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://Fzztrn8.github.io/post/c-i/">
+              <h3 class="post-title">
+                下一篇：C++ Ⅰ
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">温故而知新</div>
+  <div class="social-container">
+    
+      
+        <a href="https://github.com/Fzztrn8" target="_blank">
+          <i class="fab fa-github"></i>
+        </a>
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://Fzztrn8.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>
