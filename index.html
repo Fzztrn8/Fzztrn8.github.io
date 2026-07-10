@@ -1,0 +1,340 @@
+
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<meta name="generator" content="Gridea Pro 1.2.2">
+<title>Gridea Pro</title>
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="/favicon.ico?v=1783654421">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  <meta name="description" content="Welcome to Gridea Pro">
+<link rel="canonical" href="https://fzztrn8.github.io/">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Gridea Pro","url":"https://fzztrn8.github.io","description":"Welcome to Gridea Pro","potentialAction":{"@type":"SearchAction","query-input":"required name=search_term_string","target":"https://fzztrn8.github.io/search?q={search_term_string}"}}</script>
+<meta property="og:title" content="Gridea Pro">
+<meta property="og:description" content="Welcome to Gridea Pro">
+<meta property="og:url" content="https://fzztrn8.github.io/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Gridea Pro">
+<meta property="og:image" content="/images/avatar.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://fzztrn8.github.io/">
+<meta name="twitter:title" content="Gridea Pro">
+<meta name="twitter:description" content="Welcome to Gridea Pro">
+<meta name="twitter:image" content="/images/avatar.png">
+</head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://fzztrn8.github.io">
+        <img class="avatar" src="https://fzztrn8.github.io/images/avatar.png?v=1783654421" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://fzztrn8.github.io">
+        <h1 class="site-title">Gridea Pro</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/post" class="menu purple-link">
+            博客
+          </a>
+        
+      
+        
+          <a href="/memos" class="menu purple-link">
+            闪念
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/links" class="menu purple-link">
+            友链
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        
+        
+<section class="post-item">
+    <div class="content">
+      <a href="/post/hello-gridea/">
+        <h2 class="post-title">Hello Gridea</h2>
+      </a>
+      <div class="post-abstract">
+        <p>👏  欢迎使用 <strong>Gridea</strong> ！<br />
+✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意&hellip; &hellip;</p>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2026-07-10</span>
+        
+          <span>
+            <i class="icon icon-pricetags-outline"></i>
+            
+              <a href="/tag/gridea/">
+                Gridea
+                
+              </a>
+            
+          </span>
+        
+      </div>
+    </div>
+    
+      <a href="/post/hello-gridea/">
+        <div class="feature-container" style="background-image: url('/post-images/hello-gridea.png')">
+        </div>
+      </a>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
+      <a href="/post/bing-fa-xia-de-ji-zhu-fang-an-suo/">
+        <h2 class="post-title">并发下的技术方案（锁）</h2>
+      </a>
+      <div class="post-abstract">
+        <p>#Linux</p>
+<p>==十个线程同时对count加十万，输出发现不能准确达到100万==</p>
+<p>原因：</p>
+<p>count被分解为三条原子操作</p>
+<!-- raw HTML omitted -->
+<p>在执行过程中发生了线程切换，导致访问临界资源时出现数据竞争</p>
+<p>&lt;img src=&ldquo;<a href="https://s2.loli">https://s2.loli</a>&hellip;.</p>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2025-11-21</span>
+        
+      </div>
+    </div>
+    
+      <a href="/post/bing-fa-xia-de-ji-zhu-fang-an-suo/">
+        <div class="feature-container" style="background-image: url('/post-images/bing-fa-xia-de-ji-zhu-fang-an-suo.png')">
+        </div>
+      </a>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
+      <a href="/post/c-iii/">
+        <h2 class="post-title">C++ Ⅲ</h2>
+      </a>
+      <div class="post-abstract">
+        <h1 id="heading"><strong>三</strong></h1>
+<h2 id="cpp">Cpp的对象生存期（栈作用域生存期）</h2>
+<p>简言之，在作用域内在栈上创建的变量会在作用域结束时被销毁。对于在堆上创造的变量，也可以通过构造函数和析构函数自动删除。</p>
+<h2 id="cpp-1">Cpp的智能指针</h2>
+<p>智能指针本质上是一个原始指针的包装，当你创建一个智能指针，它会调用new为你分配内存，然后基于你使用的智能指针，这些内存会在某一时刻自动释放。首先是最简单的unique&hellip;</p>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2025-07-04</span>
+        
+      </div>
+    </div>
+    
+      <a href="/post/c-iii/">
+        <div class="feature-container" style="background-image: url('https://s2.loli.net/2025/11/21/CfUsEAlxjWevdpT.png')">
+        </div>
+      </a>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
+      <a href="/post/c-ii/">
+        <h2 class="post-title">C++ Ⅱ</h2>
+      </a>
+      <div class="post-abstract">
+        <h1 id="heading"><strong>二</strong></h1>
+<p><a href="#c%E6%95%B0%E7%BB%84">C++数组</a></p>
+<p><a href="#14c%E5%AD%97%E7%AC%A6%E4%B8%B2">C++字符串</a></p>
+<p><a href="#c%E7%9A%84%E6%88%90%E5%91%98%E5%88%9D%E5%A7%8B%E5%8C%96%E5%88%97%E8%A1%A8">C++的初始化成员列表</a></p>
+<p><a href="#c%E4%B8%AD%E7%9A%84new%E5%85%B3%E9%94%AE%E5%AD%97">C++的new关键字</a></p>
+<p><a href="#c%E9%9A%90%E5%BC%8F%E8%BD%AC%E6%8D%A2%E4%B8%8Eexplicit%E5%85%B3%E9%94%AE%E5%AD%97">C++隐式转换与explicit关键字</a></p>
+<p><a href="#c%E8%BF%90%E7%AE%97%E7%AC%A6%E5%8F%8A%E5%85%B6%E9%87%8D%E8%BD%BD">C++运算符及其重载</a></p>
+<h2 id="c"><strong>C++数组</strong></h2>
+<p>Array&hellip;</p>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2025-07-04</span>
+        
+      </div>
+    </div>
+    
+      <a href="/post/c-ii/">
+        <div class="feature-container" style="background-image: url('https://s2.loli.net/2025/11/21/CfUsEAlxjWevdpT.png')">
+        </div>
+      </a>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
+      <a href="/post/c-i/">
+        <h2 class="post-title">C++ Ⅰ</h2>
+      </a>
+      <div class="post-abstract">
+        <h1 id="heading"><strong>一</strong></h1>
+<p>[指针]<br />
+<a href="#2%E5%BC%95%E7%94%A8">引用</a></p>
+<p><a href="#3c%E7%B1%BBclass">C++类</a></p>
+<p><a href="#4c%E4%B8%AD%E7%9A%84static%E9%9D%99%E6%80%81">C++中的静态</a></p>
+<p><a href="#5c%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E9%9D%99%E6%80%81local-static">C++中的局部静态</a></p>
+<p><a href="#6c%E6%9E%9A%E4%B8%BEenum">C++枚举(enum)</a></p>
+<p><a href="#7%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0">构造函数</a></p>
+<p><a href="#8%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0">析构函数</a></p>
+<p><a href="#9c%E7%BB%A7%E6%89%BF">C++继承</a></p>
+<p>&hellip;</p>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2025-07-04</span>
+        
+      </div>
+    </div>
+    
+      <a href="/post/c-i/">
+        <div class="feature-container" style="background-image: url('https://s2.loli.net/2025/11/21/CfUsEAlxjWevdpT.png')">
+        </div>
+      </a>
+    
+  </section>
+
+<section class="post-item">
+    <div class="content">
+      <a href="/post/mysql/">
+        <h2 class="post-title">MySQL</h2>
+      </a>
+      <div class="post-abstract">
+        <p>#MySQL #SQL</p>
+<p><img src="https://bu.dusays.com/2024/08/03/66ae01e207d08.png" alt="image.png" /></p>
+<h1 id="1">1.创建数据库</h1>
+<p>使用下面的语句来创建一个名称为sql_tutorial的数据库</p>
+<pre><code class="language-MySQL">CREATE DATABASE `sql_tutorial`;
+</code></pre>
+<p>还可以展示所有的数据库</p>
+<p>``&hellip;</p>
+
+      </div>
+      <div class="post-info">
+        <span><i class="icon icon-calendar-outline"></i> 2025-07-04</span>
+        
+      </div>
+    </div>
+    
+      <a href="/post/mysql/">
+        <div class="feature-container" style="background-image: url('/post-images/mysql.png')">
+        </div>
+      </a>
+    
+  </section>
+
+
+<div class="pagination-container">
+  
+  
+</div>
+
+
+      </div>
+
+      <div class="site-footer">
+  <div class="slogan">Welcome to Gridea Pro</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by Gridea Pro | <a class="rss" href="/feed.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  <script>console.log("\n%c ✦ Gridea Pro v1.2.2 %c · Theme: fly v1.0.0 · https://gridea.pro %c\n","color:#fadfa3;background:#111111;padding:9px 14px;border-radius:4px 0 0 4px;font-weight:500;font-size:12px","color:#e05c00;background:#fff3ec;padding:9px 14px;border-radius:0 4px 4px 0;font-size:11px","")</script>
+</body>
+</html>
